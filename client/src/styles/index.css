@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@500;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-brand-black text-brand-pureWhite font-sans antialiased overflow-x-hidden selection:bg-brand-accentNeon selection:text-brand-black;
+  }
+
+  /* Custom Premium Minimalist Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-brand-black;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-800 rounded-full transition-colors duration-300 hover:bg-brand-accentNeon;
+  }
+}
+
+@layer components {
+  /* Global Luxury Glassmorphism Utilities */
+  .glass-card {
+    @apply bg-brand-cardGray border border-white/10 backdrop-blur-premium shadow-glass-card shadow-glass-inset rounded-2xl transition-all duration-500;
+  }
+
+  .glass-panel {
+    @apply bg-brand-black/40 border-b border-white/5 backdrop-blur-md shadow-sm;
+  }
+
+  /* Interactive Button Bases */
+  .btn-premium {
+    @apply relative overflow-hidden px-8 py-4 rounded-full font-display font-bold uppercase text-xs tracking-widest transition-all duration-300 transform active:scale-95;
+  }
+
+  .btn-primary {
+    @apply btn-premium bg-brand-pureWhite text-brand-black hover:bg-brand-accentNeon hover:shadow-[0_0_30px_rgba(204,255,0,0.4)];
+  }
+
+  .btn-secondary {
+    @apply btn-premium bg-transparent text-brand-pureWhite border border-white/20 hover:border-white hover:bg-white/5;
+  }
+}

@@ -1,12 +1,8 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest'
-  }
+  baseURL: 'https://axt-backend.onrender.com/api/v1', // Make sure this matches your API route structure!
+  withCredentials: true,
 });
 
 // Dynamic Request Interceptor: Automatically append active JWT variables

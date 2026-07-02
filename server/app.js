@@ -75,14 +75,7 @@ app.get('/health', (req, res) => {
 });
 
 // 10. Active Domain Router Mounting Layers
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/users', userRouter);
-app.use('/api/v1/categories', categoryRouter);
-app.use('/api/v1/products', productRouter);
-app.use('/api/v1/reviews', reviewRouter);
-app.use('/api/v1/cart', cartRouter);
-app.use('/api/v1/orders', orderRouter);
-app.use('/api/v1/payments', paymentRouter);
+
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/categories', categoryRouter);

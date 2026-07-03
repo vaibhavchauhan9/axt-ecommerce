@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import apiClient from '../services/apiClient';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 
 const CartContext = createContext(null);
 
@@ -8,6 +9,7 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState({ items: [] });
   const [cartLoading, setCartLoading] = useState(false);
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   // Load backend cart state whenever a valid user session starts running
   useEffect(() => {
@@ -40,11 +42,14 @@ export const CartProvider = ({ children }) => {
         colorHex
       });
       setCart(data.data.cart);
+      showToast('Added to bag.', 'success');
       return { success: true };
     } catch (error) {
+      const message = error.response?.data?.message || 'Inventory cart insertion block failed.';
+      showToast(message, 'error');
       return {
         success: false,
-        message: error.response?.data?.message || 'Inventory cart insertion block failed.'
+        message
       };
     }
   };
@@ -55,9 +60,11 @@ export const CartProvider = ({ children }) => {
       setCart(data.data.cart);
       return { success: true };
     } catch (error) {
+      const message = error.response?.data?.message || 'Failed to update quantity.';
+      showToast(message, 'error');
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to update quantity.'
+        message
       };
     }
   };
@@ -66,11 +73,14 @@ export const CartProvider = ({ children }) => {
     try {
       const { data } = await apiClient.delete(`/cart/${itemId}`);
       setCart(data.data.cart);
+      showToast('Item removed from bag.', 'info');
       return { success: true };
     } catch (error) {
+      const message = error.response?.data?.message || 'Item deletion failed.';
+      showToast(message, 'error');
       return {
         success: false,
-        message: error.response?.data?.message || 'Item deletion failed.'
+        message
       };
     }
   };

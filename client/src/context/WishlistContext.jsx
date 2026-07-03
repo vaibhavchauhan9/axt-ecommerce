@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import apiClient from '../services/apiClient';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 
 const WishlistContext = createContext(null);
 
@@ -8,6 +9,7 @@ export const WishlistProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState([]);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -34,11 +36,14 @@ export const WishlistProvider = ({ children }) => {
     try {
       const { data } = await apiClient.post(`/users/wishlist/${productId}`);
       setWishlist(data.data.wishlist);
+      showToast(data.inWishlist ? 'Saved to wishlist.' : 'Removed from wishlist.', 'success');
       return { success: true, inWishlist: data.inWishlist };
     } catch (error) {
+      const message = error.response?.data?.message || 'Failed to update wishlist.';
+      showToast(message, 'error');
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to update wishlist.',
+        message,
       };
     }
   };

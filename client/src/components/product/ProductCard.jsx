@@ -1,23 +1,44 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Heart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ProductCard({ product }) {
   const { addItemToCart } = useCart();
+  const { toggleWishlistItem, isInWishlist } = useWishlist();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const activePrice = product.discountPrice || product.price;
+  const saved = isInWishlist(product._id);
 
   const handleQuickAdd = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (product.sizes?.length > 0 && product.colors?.length > 0) {
-      addItemToCart(product._id, 1, product.sizes[0], product.colors[0].name, product.colors[0].hex);
+    if (!user) {
+      navigate('/login');
+      return;
     }
+    if (!product.sizes?.length) return;
+    const colorName = product.colors?.[0]?.name || 'Standard';
+    const colorHex = product.colors?.[0]?.hex || '#000000';
+    addItemToCart(product._id, 1, product.sizes[0], colorName, colorHex);
+  };
+
+  const handleToggleWishlist = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    toggleWishlistItem(product._id);
   };
 
   return (
-    <Link 
-      to={`/product/${product.slug}`} 
+    <Link
+      to={`/product/${product.slug}`}
       className="group flex flex-col w-full bg-transparent transition-all duration-300 select-none"
     >
       {/* High-Contrast Image Container */}
@@ -38,6 +59,18 @@ export default function ProductCard({ product }) {
             SALE
           </span>
         )}
+
+        {/* Wishlist Heart Toggle */}
+        <button
+          onClick={handleToggleWishlist}
+          className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-full border-2 border-black hover:scale-110 transition-transform"
+          aria-label={saved ? 'Remove from wishlist' : 'Add to wishlist'}
+        >
+          <Heart
+            size={14}
+            className={saved ? 'text-red-500 fill-red-500' : 'text-black'}
+          />
+        </button>
 
         {/* Quick Add Overlay */}
         <div className="absolute bottom-3 left-3 right-3 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">

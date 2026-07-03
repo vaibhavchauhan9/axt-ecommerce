@@ -168,7 +168,7 @@ export default function Checkout() {
                       <h4 className="text-xs font-bold uppercase text-white line-clamp-1">{item.product?.name || 'Product unavailable'}</h4>
                       <p className="text-[10px] text-neutral-500">Qty: {item.quantity} | Size: {item.size}</p>
                     </div>
-                    <span className="text-xs font-bold text-white">₹{((item.product?.discountPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}</span>
+                    <span className="text-xs font-bold text-white">₹{((item.product?.discountPrice || item.product?.price || 0) * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>

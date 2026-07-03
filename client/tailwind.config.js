@@ -10,10 +10,15 @@ export default {
       colors: {
         brand: {
           black: '#000000',
+          neutralDark: '#0a000a',
           'neutral-dark': '#0a000a',
           accentNeon: '#dfff00',
+          'accent-neon': '#dfff00',
+          grayBorder: 'rgba(255,255,255,0.05)',
           'gray-border': 'rgba(255,255,255,0.05)',
+          cardGray: '#111111',
           'card-gray': '#111111',
+          pureWhite: '#ffffff',
           'pure-white': '#ffffff',
         }
       },

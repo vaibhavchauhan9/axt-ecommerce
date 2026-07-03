@@ -11,11 +11,11 @@ export default {
         brand: {
           black: '#000000',
           neutralDark: '#0a000a',
-          accentNeon: '#dfff00', // Neon Brutalist Yellow/Green
+          accentNeon: '#dfff00',
           grayBorder: 'rgba(255,255,255,0.05)',
+          pureWhite: '#ffffff', // 🟢 FIX: Yeh missing color yahan add kar dijiye
         }
       },
-      // 🟢 OVERRIDING CORE SANS TOKEN LAYER WITH RUBIK
       fontFamily: {
         sans: ['Rubik', 'sans-serif'],
       },

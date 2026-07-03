@@ -78,7 +78,7 @@ export default function Hero() {
             <div className="absolute bottom-6 left-6 right-6 z-20 bg-brand-black/80 backdrop-blur-md border border-white/10 p-4 rounded-xl translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
               <p className="text-xs font-bold font-display uppercase tracking-wider text-white">Oversized Heavy Tee</p>
               <div className="flex justify-between items-center mt-2">
-                <span className="text-[10px] text-brand-accentNeon font-sans font-bold">$45.00</span>
+                <span className="text-[10px] text-brand-accentNeon font-sans font-bold">₹45.00</span>
                 <span className="text-[9px] bg-white text-black font-black px-2 py-0.5 rounded uppercase">280 GSM</span>
               </div>
             </div>

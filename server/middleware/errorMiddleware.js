@@ -51,17 +51,21 @@ export const globalErrorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 
+  // Normalize JWT errors to a proper 401 AppError in every environment,
+  // so the client's 401-based refresh-token interceptor can catch them.
+  let normalizedErr = err;
+  if (normalizedErr.name === 'JsonWebTokenError') normalizedErr = handleJWTError();
+  if (normalizedErr.name === 'TokenExpiredError') normalizedErr = handleJWTExpiredError();
+
   if (process.env.NODE_ENV === 'development') {
-    sendErrorDev(err, res);
+    sendErrorDev(normalizedErr, res);
   } else if (process.env.NODE_ENV === 'production') {
-    let error = Object.assign(err);
-    error.message = err.message;
+    let error = Object.assign(normalizedErr);
+    error.message = normalizedErr.message;
 
     if (error.name === 'CastError') error = handleCastErrorDB(error);
     if (error.code === 11000) error = handleDuplicateFieldsDB(error);
     if (error.name === 'ValidationError') error = handleValidationErrorDB(error);
-    if (error.name === 'JsonWebTokenError') error = handleJWTError();
-    if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
 
     sendErrorProd(error, res);
   }

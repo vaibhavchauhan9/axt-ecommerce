@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ForgotPasswordModal from '../components/auth/ForgotPasswordModal';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,6 +11,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   
   const { loginUser, user } = useAuth();
   const navigate = useNavigate();
@@ -96,15 +98,24 @@ export default function Login() {
           </div>
 
           {/* Remember Me Option */}
-          <div className="flex items-center gap-2 self-start pl-2">
-            <input 
-              type="checkbox" 
-              id="rememberMe" 
-              className="w-4 h-4 bg-transparent border-2 border-white checked:bg-[#008BE5] focus:ring-0 cursor-pointer accent-[#008BE5]"
-            />
-            <label htmlFor="rememberMe" className="text-xs text-white font-sans cursor-pointer font-medium">
-              Remember me
-            </label>
+          <div className="flex items-center justify-between gap-2 pl-2 pr-1">
+            <div className="flex items-center gap-2">
+              <input 
+                type="checkbox" 
+                id="rememberMe" 
+                className="w-4 h-4 bg-transparent border-2 border-white checked:bg-[#008BE5] focus:ring-0 cursor-pointer accent-[#008BE5]"
+              />
+              <label htmlFor="rememberMe" className="text-xs text-white font-sans cursor-pointer font-medium">
+                Remember me
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-xs text-[#008BE5] font-bold hover:underline transition-colors"
+            >
+              Forgot password?
+            </button>
           </div>
 
           {/* Electric Blue Action Accent Button */}
@@ -121,6 +132,10 @@ export default function Login() {
           Don't have an account? <Link to="/register" className="font-bold underline hover:text-[#008BE5] transition-colors ml-1">Register</Link>
         </p>
       </div>
+
+      {showForgotPassword && (
+        <ForgotPasswordModal onClose={() => setShowForgotPassword(false)} />
+      )}
     </div>
   );
 }

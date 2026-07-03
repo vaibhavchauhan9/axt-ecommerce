@@ -90,7 +90,7 @@ export default function ProductCard({ product }) {
             {product.name}
           </h3>
           <span className="text-sm font-black text-black whitespace-nowrap">
-            ${activePrice.toFixed(2)}
+            ₹{activePrice.toFixed(2)}
           </span>
         </div>
         <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">{product.brand}</p>

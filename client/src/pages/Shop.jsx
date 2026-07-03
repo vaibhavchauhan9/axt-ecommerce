@@ -173,7 +173,7 @@ export default function Shop() {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-3">
               <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Max Price</label>
-              <span className="text-xs font-bold text-white">${priceMax}</span>
+              <span className="text-xs font-bold text-white">₹{priceMax}</span>
             </div>
             <input 
               type="range" 

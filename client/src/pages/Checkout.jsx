@@ -168,18 +168,18 @@ export default function Checkout() {
                       <h4 className="text-xs font-bold uppercase text-white line-clamp-1">{item.product?.name || 'Product unavailable'}</h4>
                       <p className="text-[10px] text-neutral-500">Qty: {item.quantity} | Size: {item.size}</p>
                     </div>
-                    <span className="text-xs font-bold text-white">${((item.product?.discountPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}</span>
+                    <span className="text-xs font-bold text-white">₹{((item.product?.discountPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="border-t border-white/10 pt-4 flex flex-col gap-3 text-xs text-neutral-400 mb-6">
-                <div className="flex justify-between"><span>Subtotal</span><span className="text-white">${summary.subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Shipping</span><span className="text-white">${summary.shipping === 0 ? 'FREE' : summary.shipping.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Taxes (18%)</span><span className="text-white">${summary.tax.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Subtotal</span><span className="text-white">₹{summary.subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Shipping</span><span className="text-white">{summary.shipping === 0 ? 'FREE' : `₹${summary.shipping.toFixed(2)}`}</span></div>
+                <div className="flex justify-between"><span>Taxes (18%)</span><span className="text-white">₹{summary.tax.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center border-t border-white/5 pt-3 mt-1">
                   <span className="text-sm font-bold text-white uppercase">Final Total</span>
-                  <span className="text-lg font-black text-brand-accentNeon">${summary.total.toFixed(2)}</span>
+                  <span className="text-lg font-black text-brand-accentNeon">₹{summary.total.toFixed(2)}</span>
                 </div>
               </div>
 

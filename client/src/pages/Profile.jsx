@@ -106,7 +106,7 @@ export default function Profile() {
                     <div key={order._id} className="bg-neutral-900/40 border border-white/5 rounded-xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-white/20 transition-colors">
                       <div>
                         <p className="text-[10px] text-neutral-500 font-mono tracking-widest mb-1">ID: {order._id}</p>
-                        <p className="text-sm font-bold text-white mb-2">Total: ${order.totalPrice.toFixed(2)}</p>
+                        <p className="text-sm font-bold text-white mb-2">Total: ₹{order.totalPrice.toFixed(2)}</p>
                         <span className={`px-2 py-1 rounded text-[10px] font-black tracking-widest uppercase ${order.orderStatus === 'DELIVERED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                           {order.orderStatus}
                         </span>

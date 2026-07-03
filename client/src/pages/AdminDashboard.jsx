@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, ShoppingBag, AlertTriangle, TrendingUp, DollarSign, Package, Plus, Trash2, Pencil, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, AlertTriangle, TrendingUp, IndianRupee, Package, Plus, Trash2, Pencil, X } from 'lucide-react';
 import apiClient from '../services/apiClient';
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -286,7 +286,7 @@ export default function AdminDashboard() {
                 <div className="glass-card p-6 border border-white/5">
                   <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest block mb-2">Total Revenue</span>
                   <span className="text-2xl font-black text-white flex items-center gap-1">
-                    <DollarSign size={20} className="text-brand-accentNeon" />
+                    <IndianRupee size={20} className="text-brand-accentNeon" />
                     {stats.summary.totalRevenue.toFixed(2)}
                   </span>
                 </div>
@@ -661,7 +661,7 @@ export default function AdminDashboard() {
                         <td className="p-4 text-xs font-mono text-neutral-400">{order._id.substring(0, 8)}...</td>
                         <td className="p-4 text-xs text-neutral-300">{new Date(order.createdAt).toLocaleDateString()}</td>
                         <td className="p-4 text-xs font-bold uppercase">{order.user?.name || 'GUEST'}</td>
-                        <td className="p-4 text-xs font-bold text-brand-accentNeon">${order.totalPrice.toFixed(2)}</td>
+                        <td className="p-4 text-xs font-bold text-brand-accentNeon">₹{order.totalPrice.toFixed(2)}</td>
                         <td className="p-4">
                           <span className={`px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase ${order.orderStatus === 'DELIVERED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                             {order.orderStatus}

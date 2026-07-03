@@ -121,9 +121,9 @@ export default function ProductDetails() {
           {/* Pricing & Ratings */}
           <div className="flex items-center gap-6 mb-6">
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-black font-sans text-white">${activePrice.toFixed(2)}</span>
+              <span className="text-3xl font-black font-sans text-white">₹{activePrice.toFixed(2)}</span>
               {product.discountPrice && (
-                <span className="text-neutral-500 font-sans line-through text-sm mb-1">${product.price.toFixed(2)}</span>
+                <span className="text-neutral-500 font-sans line-through text-sm mb-1">₹{product.price.toFixed(2)}</span>
               )}
             </div>
             

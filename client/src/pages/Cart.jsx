@@ -92,7 +92,7 @@ export default function Cart() {
                       {outOfStock ? (
                         <p className="text-[11px] font-bold text-red-400 mt-2 uppercase tracking-wide">Out of Stock</p>
                       ) : (
-                        <p className="text-brand-accentNeon font-bold text-sm mt-2">${price.toFixed(2)}</p>
+                        <p className="text-brand-accentNeon font-bold text-sm mt-2">₹{price.toFixed(2)}</p>
                       )}
 
                       {/* Quantity Stepper */}
@@ -116,7 +116,7 @@ export default function Cart() {
                     </div>
 
                     <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-between gap-3">
-                      <span className="font-black text-base text-white">${lineTotal.toFixed(2)}</span>
+                      <span className="font-black text-base text-white">₹{lineTotal.toFixed(2)}</span>
                       <button
                         onClick={() => removeItemFromCart(item._id)}
                         className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-red-400 transition-colors"
@@ -139,19 +139,19 @@ export default function Cart() {
 
               <div className="flex justify-between text-sm text-neutral-300">
                 <span>Subtotal ({items.reduce((c, i) => c + i.quantity, 0)} items)</span>
-                <span className="font-bold text-white">${cartTotalAmount.toFixed(2)}</span>
+                <span className="font-bold text-white">₹{cartTotalAmount.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between text-sm text-neutral-300">
                 <span>Shipping</span>
                 <span className="font-bold text-white">
-                  {shippingEstimate === 0 ? 'Free' : `$${shippingEstimate.toFixed(2)}`}
+                  {shippingEstimate === 0 ? 'Free' : `₹${shippingEstimate.toFixed(2)}`}
                 </span>
               </div>
 
               {shippingEstimate > 0 && (
                 <p className="text-[10px] text-neutral-500">
-                  Add ${(75 - cartTotalAmount).toFixed(2)} more to unlock free shipping.
+                  Add ₹{(75 - cartTotalAmount).toFixed(2)} more to unlock free shipping.
                 </p>
               )}
 
@@ -159,7 +159,7 @@ export default function Cart() {
 
               <div className="flex justify-between text-base">
                 <span className="font-bold uppercase tracking-wide">Total</span>
-                <span className="font-black text-brand-accentNeon">${orderTotal.toFixed(2)}</span>
+                <span className="font-black text-brand-accentNeon">₹{orderTotal.toFixed(2)}</span>
               </div>
 
               <button

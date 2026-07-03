@@ -91,7 +91,7 @@ export default function Wishlist() {
                     </h3>
                   </Link>
                   <p className="text-[10px] text-neutral-500 uppercase tracking-widest">{product.brand}</p>
-                  <span className="font-black text-sm text-brand-accentNeon">${activePrice?.toFixed(2)}</span>
+                  <span className="font-black text-sm text-brand-accentNeon">₹{activePrice?.toFixed(2)}</span>
 
                   <button
                     onClick={() => handleMoveToCart(product)}

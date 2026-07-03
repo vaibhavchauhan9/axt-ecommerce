@@ -2,6 +2,8 @@ import User from '../models/User.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/appError.js';
 import { generateTokens } from '../utils/generateToken.js';
+import sendEmail from '../utils/sendEmail.js';
+import otpEmailTemplate from '../utils/otpEmailTemplate.js';
 import jwt from 'jsonwebtoken';
 
 // @desc    Register a new premium customer account footprint
@@ -120,5 +122,89 @@ export const logout = asyncHandler(async (req, res, net) => {
   res.status(200).json({
     status: 'success',
     message: 'Session tracking contexts successfully cleared.',
+  });
+});
+
+// @desc    Generate a 6-digit OTP and email it to the account's registered address
+// @route   POST /api/v1/auth/forgot-password
+// @access  Public
+export const forgotPassword = asyncHandler(async (req, res, next) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  // Respond identically whether the account exists or not — this prevents
+  // attackers from using this endpoint to discover which emails are registered.
+  const genericResponse = {
+    status: 'success',
+    message: 'If an account exists for this email, a 6-digit OTP has been sent to it.',
+  };
+
+  if (!user) {
+    return res.status(200).json(genericResponse);
+  }
+
+  const otp = user.createPasswordResetOTP();
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Your AXT Password Reset OTP',
+      html: otpEmailTemplate(user.name, otp),
+    });
+  } catch (emailErr) {
+    // Sending failed — roll back the OTP fields so a stale/unsent code can't be exploited
+    user.passwordResetOTP = undefined;
+    user.passwordResetOTPExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    console.error('[Email Dispatch Error]:', emailErr.message);
+    return next(new AppError('Unable to dispatch the reset OTP email right now. Please try again shortly.', 500));
+  }
+
+  res.status(200).json(genericResponse);
+});
+
+// @desc    Verify a submitted OTP is correct and unexpired (does not consume it)
+// @route   POST /api/v1/auth/verify-reset-otp
+// @access  Public
+export const verifyResetOtp = asyncHandler(async (req, res, next) => {
+  const { email, otp } = req.body;
+
+  const user = await User.findOne({ email }).select('+passwordResetOTP +passwordResetOTPExpires');
+
+  if (!user || !user.verifyPasswordResetOTP(otp)) {
+    return next(new AppError('This OTP is invalid or has expired. Please request a new one.', 400));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'OTP verified successfully.',
+  });
+});
+
+// @desc    Verify the OTP one final time and commit the new password
+// @route   POST /api/v1/auth/reset-password
+// @access  Public
+export const resetPassword = asyncHandler(async (req, res, next) => {
+  const { email, otp, newPassword } = req.body;
+
+  const user = await User.findOne({ email }).select('+passwordResetOTP +passwordResetOTPExpires');
+
+  if (!user || !user.verifyPasswordResetOTP(otp)) {
+    return next(new AppError('This OTP is invalid or has expired. Please request a new one.', 400));
+  }
+
+  // Assign the new password — the pre-save hook hashes it and stamps passwordChangedAt,
+  // which automatically invalidates any JWTs issued before this moment.
+  user.password = newPassword;
+  user.passwordResetOTP = undefined;
+  user.passwordResetOTPExpires = undefined;
+  await user.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Password reset successfully. Please log in with your new password.',
   });
 });

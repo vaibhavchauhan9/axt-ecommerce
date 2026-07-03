@@ -1,38 +1,35 @@
-// client/tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx, Larx,jsx}"
   ],
   theme: {
     extend: {
       colors: {
         brand: {
-          black: '#000000',
-          neutralDark: '#0a000a',
-          'neutral-dark': '#0a000a',
-          accentNeon: '#dfff00',
-          'accent-neon': '#dfff00',
-          grayBorder: 'rgba(255,255,255,0.05)',
-          'gray-border': 'rgba(255,255,255,0.05)',
-          cardGray: '#111111',
-          'card-gray': '#111111',
-          pureWhite: '#ffffff',
-          'pure-white': '#ffffff',
+          black: '#0A0A0A',
+          darkGray: '#121212',
+          cardGray: 'rgba(20, 20, 20, 0.6)',
+          pureWhite: '#FFFFFF',
+          accentNeon: '#CCFF00', // Premium high-attitude highlight accent
         }
       },
       fontFamily: {
-        sans: ['Rubik', 'sans-serif'],
+        sans: ['Space Grotesk', 'sans-serif'],
         display: ['Syne', 'sans-serif'],
       },
-      boxShadow: {
-        'glass-card': '0 10px 40px rgba(0, 0, 0, 0.25)',
-        'glass-inset': 'inset 0 1px 0 rgba(255,255,255,0.08)',
-      },
       backdropBlur: {
-        premium: '24px',
+        xs: '2px',
+        premium: '20px'
       },
+      boxShadow: {
+        'glass-inset': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.1)',
+        'glass-card': '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+      },
+      animation: {
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      }
     },
   },
   plugins: [],

@@ -54,7 +54,7 @@ export default function CartDrawer() {
                   <h4 className="text-xs font-bold uppercase text-white line-clamp-1">{item.product?.name || 'Product unavailable'}</h4>
                   <p className="text-[10px] text-neutral-400 mt-1">Size: {item.size} | Color: {item.color?.name}</p>
                   <p className="text-brand-accentNeon font-bold text-xs mt-1">
-                    ${(item.product?.discountPrice ?? item.product?.price ?? 0).toFixed(2)} x {item.quantity}
+                    ₹{(item.product?.discountPrice ?? item.product?.price ?? 0).toFixed(2)} x {item.quantity}
                   </p>
                 </div>
                 <button 
@@ -72,7 +72,7 @@ export default function CartDrawer() {
         <div className="p-6 border-t border-white/10 bg-neutral-950">
           <div className="flex justify-between items-center mb-6">
             <span className="text-xs uppercase tracking-widest text-neutral-400">Subtotal</span>
-            <span className="text-lg font-bold text-white">${cartTotalAmount.toFixed(2)}</span>
+            <span className="text-lg font-bold text-white">₹{cartTotalAmount.toFixed(2)}</span>
           </div>
           <button 
             onClick={handleCheckout}

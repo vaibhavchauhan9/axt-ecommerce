@@ -53,7 +53,10 @@ export default function App() {
           <CartProvider>
             <WishlistProvider>
               <UIProvider>
-                <div className="w-full min-h-screen bg-brand-black flex flex-col font-sans antialiased text-white selection:bg-brand-accentNeon selection:text-brand-black">
+                <div
+                  className="w-full min-h-screen bg-brand-black flex flex-col font-sans antialiased text-white selection:bg-brand-accentNeon selection:text-brand-black"
+                  style={{ fontFamily: "'Rubik', sans-serif" }}
+                >
                   <Navbar />
                   <ToastContainer />
 

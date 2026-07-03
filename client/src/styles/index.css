@@ -16,7 +16,7 @@
   }
 
   body {
-    @apply bg-brand-black text-brand-pureWhite font-sans antialiased overflow-x-hidden selection:bg-brand-accentNeon selection:text-brand-black;
+    @apply bg-brand-black text-brand-pure-white font-sans antialiased overflow-x-hidden selection:bg-brand-accentNeon selection:text-brand-black;
   }
 
   /* Custom Premium Minimalist Scrollbar */
@@ -34,7 +34,7 @@
 @layer components {
   /* Global Luxury Glassmorphism Utilities */
   .glass-card {
-    @apply bg-brand-cardGray border border-white/10 backdrop-blur-premium shadow-glass-card shadow-glass-inset rounded-2xl transition-all duration-500;
+    @apply bg-brand-card-gray border border-white/10 backdrop-blur-premium shadow-glass-card shadow-glass-inset rounded-2xl transition-all duration-500;
   }
 
   .glass-panel {
@@ -47,10 +47,10 @@
   }
 
   .btn-primary {
-    @apply btn-premium bg-brand-pureWhite text-brand-black hover:bg-brand-accentNeon hover:shadow-[0_0_30px_rgba(204,255,0,0.4)];
+    @apply btn-premium bg-brand-pure-white text-brand-black hover:bg-brand-accentNeon hover:shadow-[0_0_30px_rgba(204,255,0,0.4)];
   }
 
   .btn-secondary {
-    @apply btn-premium bg-transparent text-brand-pureWhite border border-white/20 hover:border-white hover:bg-white/5;
+    @apply btn-premium bg-transparent text-brand-pure-white border border-white/20 hover:border-white hover:bg-white/5;
   }
 }

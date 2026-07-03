@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema(
   {
@@ -53,8 +54,14 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
     passwordChangedAt: Date,
-    passwordResetToken: String,
-    passwordResetExpires: Date,
+    passwordResetOTP: {
+      type: String,
+      select: false,
+    },
+    passwordResetOTPExpires: {
+      type: Date,
+      select: false,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -91,6 +98,26 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
     return JWTTimestamp < changedTimestamp;
   }
   return false;
+};
+
+// Instance Method: Generate a random 6-digit OTP, persist only its SHA-256 hash + 10-min expiry,
+// and return the PLAIN otp so it can be emailed to the user (never stored in plaintext).
+userSchema.methods.createPasswordResetOTP = function () {
+  const otp = crypto.randomInt(100000, 999999).toString();
+
+  this.passwordResetOTP = crypto.createHash('sha256').update(otp).digest('hex');
+  this.passwordResetOTPExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  return otp;
+};
+
+// Instance Method: Verify a submitted OTP against the stored hash and expiry window
+userSchema.methods.verifyPasswordResetOTP = function (candidateOtp) {
+  if (!this.passwordResetOTP || !this.passwordResetOTPExpires) return false;
+  if (this.passwordResetOTPExpires < Date.now()) return false;
+
+  const hashedCandidate = crypto.createHash('sha256').update(candidateOtp).digest('hex');
+  return hashedCandidate === this.passwordResetOTP;
 };
 
 const User = mongoose.model('User', userSchema);

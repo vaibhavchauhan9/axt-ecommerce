@@ -17,8 +17,8 @@ const cartItemSchema = new mongoose.Schema({
     required: true,
   },
   color: {
-    type: String,
-    required: true,
+    name: { type: String, required: true },
+    hex: { type: String, required: true },
   },
 });
 

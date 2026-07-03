@@ -21,7 +21,7 @@ export const createStripeCheckoutSession = asyncHandler(async (req, res, next) =
   // 2. Format localized order line items into clear Stripe parameter arrays
   const lineItems = order.items.map((item) => ({
     price_data: {
-      currency: 'usd',
+      currency: 'inr',
       product_data: {
         name: `${item.name} (${item.size} / ${item.color.name})`,
         images: [item.image],
@@ -35,7 +35,7 @@ export const createStripeCheckoutSession = asyncHandler(async (req, res, next) =
   if (order.shippingPrice > 0) {
     lineItems.push({
       price_data: {
-        currency: 'usd',
+        currency: 'inr',
         product_data: { name: 'Shipping & Delivery handling fee' },
         unit_amount: Math.round(order.shippingPrice * 100),
       },
@@ -46,7 +46,7 @@ export const createStripeCheckoutSession = asyncHandler(async (req, res, next) =
   if (order.taxPrice > 0) {
     lineItems.push({
       price_data: {
-        currency: 'usd',
+        currency: 'inr',
         product_data: { name: 'Estimated Government Sales Surcharge (GST/VAT)' },
         unit_amount: Math.round(order.taxPrice * 100),
       },

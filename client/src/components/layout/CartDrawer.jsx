@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Trash2, ArrowRight } from 'lucide-react';
+import { X, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 import { useCart } from '../../context/CartContext';
 
@@ -46,15 +46,15 @@ export default function CartDrawer() {
             cart.items.map((item) => (
               <div key={item._id} className="flex gap-4 items-center bg-neutral-900/50 p-3 rounded-xl border border-white/5">
                 <img 
-                  src={item.product?.images[0]} 
-                  alt={item.product?.name} 
+                  src={item.product?.images?.[0]} 
+                  alt={item.product?.name || 'Product'} 
                   className="w-16 h-20 object-cover rounded-md border border-white/10"
                 />
                 <div className="flex-1">
-                  <h4 className="text-xs font-bold uppercase text-white line-clamp-1">{item.product?.name}</h4>
+                  <h4 className="text-xs font-bold uppercase text-white line-clamp-1">{item.product?.name || 'Product unavailable'}</h4>
                   <p className="text-[10px] text-neutral-400 mt-1">Size: {item.size} | Color: {item.color?.name}</p>
                   <p className="text-brand-accentNeon font-bold text-xs mt-1">
-                    ${(item.product?.discountPrice || item.product?.price).toFixed(2)} x {item.quantity}
+                    ${(item.product?.discountPrice ?? item.product?.price ?? 0).toFixed(2)} x {item.quantity}
                   </p>
                 </div>
                 <button 

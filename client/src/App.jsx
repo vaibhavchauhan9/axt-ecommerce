@@ -8,6 +8,7 @@ import CartDrawer from './components/layout/CartDrawer';
 import SearchOverlay from './components/layout/SearchOverlay';
 import SideMenu from './components/layout/SideMenu';
 import PromoBanner from './components/layout/PromoBanner';
+import ToastContainer from './components/layout/ToastContainer';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
@@ -54,6 +55,7 @@ export default function App() {
               <UIProvider>
                 <div className="w-full min-h-screen bg-brand-black flex flex-col font-sans antialiased text-white selection:bg-brand-accentNeon selection:text-brand-black">
                   <Navbar />
+                  <ToastContainer />
 
                   <div className="pt-16 flex flex-col w-full">
                     <PromoBanner />

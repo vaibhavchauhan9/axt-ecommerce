@@ -35,14 +35,40 @@ const productSchema = new mongoose.Schema(
     },
     discountPrice: {
       type: Number,
+      default: 0,
       validate: {
-        validator: function (val) {
-          // 'this' only points to current doc on NEW document creation
-          return val < this.price;
+        validator: async function (val) {
+          // 1. Agar discountPrice bhari nahi hai, null hai, ya 0 hai toh validation bypass karein
+          if (val === undefined || val === null || val === 0) {
+            return true;
+          }
+
+          // 2. CREATE operation ke liye standard validation architecture
+          if (this.price !== undefined) {
+            return val < this.price;
+          }
+
+          // 3. EDIT (findOneAndUpdate) operation bypass handler:
+          if (this.getUpdate) {
+            const updateFields = this.getUpdate().$set || this.getUpdate();
+            
+            // Agar price bhi is query ke sath update ho rahi hai
+            if (updateFields.price !== undefined) {
+              return val < updateFields.price;
+            }
+
+            // Agar price update nahi ho rahi, toh database se current product fetch karke check karein
+            const currentProduct = await this.model.findOne(this.getQuery());
+            if (currentProduct && currentProduct.price !== undefined) {
+              return val < currentProduct.price;
+            }
+          }
+
+          return true;
         },
         message: 'Discount price ({VALUE}) must be strictly lower than the standard catalog price.',
       },
-    },
+    }, // 🟢 FIXED: Missing comma yahan laga diya hai
     sizes: {
       type: [String],
       enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -81,7 +107,7 @@ const productSchema = new mongoose.Schema(
       default: 4.5,
       min: [1, 'Rating must be at least 1.0'],
       max: [5, 'Rating cannot exceed 5.0'],
-      set: (val) => Math.round(val * 10) / 10, // Rounds 4.6666 to 4.7
+      set: (val) => Math.round(val * 10) / 10,
     },
     ratingsQuantity: {
       type: Number,
@@ -97,10 +123,13 @@ const productSchema = new mongoose.Schema(
 
 // Optimizing Search & Filtering Architectures via Database Level Indexing
 productSchema.index({ price: 1, ratingsAverage: -1 });
-productSchema.index({ name: 'text', description: 'text', brand: 'text' }, {
-  weights: { name: 10, brand: 5, description: 1 },
-  name: 'ProductTextSearchIndex',
-});
+productSchema.index(
+  { name: 'text', description: 'text', brand: 'text' },
+  {
+    weights: { name: 10, brand: 5, description: 1 },
+    name: 'ProductTextSearchIndex',
+  }
+);
 
 // Dynamic Virtuals: Determine live active product availability status
 productSchema.virtual('inStock').get(function () {

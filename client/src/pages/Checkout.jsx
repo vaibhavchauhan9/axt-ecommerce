@@ -163,12 +163,12 @@ export default function Checkout() {
               <div className="flex flex-col gap-4 mb-6 max-h-64 overflow-y-auto pr-2">
                 {cart.items?.map((item) => (
                   <div key={item._id} className="flex gap-4 items-center">
-                    <img src={item.product?.images[0]} alt="Pic" className="w-12 h-16 object-cover rounded-md border border-white/10" />
+                    <img src={item.product?.images?.[0]} alt="Pic" className="w-12 h-16 object-cover rounded-md border border-white/10" />
                     <div className="flex-1">
-                      <h4 className="text-xs font-bold uppercase text-white line-clamp-1">{item.product?.name}</h4>
+                      <h4 className="text-xs font-bold uppercase text-white line-clamp-1">{item.product?.name || 'Product unavailable'}</h4>
                       <p className="text-[10px] text-neutral-500">Qty: {item.quantity} | Size: {item.size}</p>
                     </div>
-                    <span className="text-xs font-bold text-white">${((item.product?.discountPrice || item.product?.price) * item.quantity).toFixed(2)}</span>
+                    <span className="text-xs font-bold text-white">${((item.product?.discountPrice ?? item.product?.price ?? 0) * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>

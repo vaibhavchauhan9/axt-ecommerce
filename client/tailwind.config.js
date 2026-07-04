@@ -2,7 +2,7 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx, Larx,jsx}"
+    "./src/**/*.{js,jsx,ts,tsx}"
   ],
   theme: {
     extend: {
@@ -16,8 +16,8 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Space Grotesk', 'sans-serif'],
-        display: ['Syne', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
+        display: ['Archivo', 'sans-serif'],
       },
       backdropBlur: {
         xs: '2px',

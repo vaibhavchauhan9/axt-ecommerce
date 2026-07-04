@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('metrics');
   const [stats, setStats] = useState(null);
   const [salesReport, setSalesReport] = useState([]);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Product management state
@@ -644,12 +645,13 @@ export default function AdminDashboard() {
               </h3>
 
               <div className="glass-card border border-white/5 overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[800px]">
+                <table className="w-full text-left border-collapse min-w-[900px]">
                   <thead>
                     <tr className="border-b border-white/10 bg-black/40">
                       <th className="p-4 text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Order ID</th>
                       <th className="p-4 text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Date</th>
                       <th className="p-4 text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Customer</th>
+                      <th className="p-4 text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Payment</th>
                       <th className="p-4 text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Total</th>
                       <th className="p-4 text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Status</th>
                       <th className="p-4 text-[10px] text-neutral-500 font-bold uppercase tracking-widest text-right">Action</th>
@@ -657,30 +659,79 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {salesReport.map(order => (
-                      <tr key={order._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="p-4 text-xs font-mono text-neutral-400">{order._id.substring(0, 8)}...</td>
-                        <td className="p-4 text-xs text-neutral-300">{new Date(order.createdAt).toLocaleDateString()}</td>
-                        <td className="p-4 text-xs font-bold uppercase">{order.user?.name || 'GUEST'}</td>
-                        <td className="p-4 text-xs font-bold text-brand-accentNeon">₹{order.totalPrice.toFixed(2)}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase ${order.orderStatus === 'DELIVERED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                            {order.orderStatus}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <select 
-                            value={order.orderStatus}
-                            onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
-                            className="bg-neutral-900 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-white rounded px-2 py-1 focus:outline-none focus:border-brand-accentNeon cursor-pointer"
-                          >
-                            <option value="PENDING">PENDING</option>
-                            <option value="PACKED">PACKED</option>
-                            <option value="SHIPPED">SHIPPED</option>
-                            <option value="DELIVERED">DELIVERED</option>
-                            <option value="CANCELLED">CANCELLED</option>
-                          </select>
-                        </td>
-                      </tr>
+                      <React.Fragment key={order._id}>
+                        <tr
+                          onClick={() => setExpandedOrderId(expandedOrderId === order._id ? null : order._id)}
+                          className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
+                        >
+                          <td className="p-4 text-xs font-mono text-neutral-400">{order._id.substring(0, 8)}...</td>
+                          <td className="p-4 text-xs text-neutral-300">{new Date(order.createdAt).toLocaleDateString()}</td>
+                          <td className="p-4 text-xs font-bold uppercase">{order.user?.name || 'GUEST'}</td>
+                          <td className="p-4">
+                            <span className={`px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase ${order.paymentMethod === 'COD' ? 'bg-orange-500/10 text-orange-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                              {order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod}
+                            </span>
+                          </td>
+                          <td className="p-4 text-xs font-bold text-brand-accentNeon">₹{order.totalPrice.toFixed(2)}</td>
+                          <td className="p-4">
+                            <span className={`px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase ${order.orderStatus === 'DELIVERED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                              {order.orderStatus}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            <select 
+                              value={order.orderStatus}
+                              onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
+                              className="bg-neutral-900 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-white rounded px-2 py-1 focus:outline-none focus:border-brand-accentNeon cursor-pointer"
+                            >
+                              <option value="PENDING">PENDING</option>
+                              <option value="PACKED">PACKED</option>
+                              <option value="SHIPPED">SHIPPED</option>
+                              <option value="DELIVERED">DELIVERED</option>
+                              <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                          </td>
+                        </tr>
+
+                        {/* Expandable panel: customer contact + delivery address + items — essential for COD fulfilment */}
+                        {expandedOrderId === order._id && (
+                          <tr className="bg-black/40 border-b border-white/5">
+                            <td colSpan={7} className="p-5">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                  <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-2">Customer Contact</p>
+                                  <p className="text-xs text-white font-bold">{order.user?.name || 'Guest'}</p>
+                                  <p className="text-xs text-neutral-400 mt-1">{order.user?.email || '—'}</p>
+                                  <p className="text-xs text-neutral-400 mt-1">{order.user?.phoneNumber || 'No phone on file'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-2">Delivery Address</p>
+                                  <p className="text-xs text-neutral-300 leading-relaxed">
+                                    {order.shippingAddress?.street}<br />
+                                    {order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.postalCode}<br />
+                                    {order.shippingAddress?.country}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-2">Items ({order.items?.length || 0})</p>
+                                  <div className="flex flex-col gap-1.5 max-h-24 overflow-y-auto pr-2">
+                                    {order.items?.map((item, idx) => (
+                                      <p key={idx} className="text-xs text-neutral-300">
+                                        {item.quantity}x {item.name} <span className="text-neutral-500">({item.size}, {item.color?.name})</span>
+                                      </p>
+                                    ))}
+                                  </div>
+                                  {order.paymentMethod === 'COD' && (
+                                    <p className="text-[10px] text-orange-400 font-bold uppercase tracking-widest mt-3">
+                                      ⚠ Collect ₹{order.totalPrice.toFixed(2)} cash on delivery
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>

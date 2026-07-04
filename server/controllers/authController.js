@@ -133,8 +133,6 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
 
   const user = await User.findOne({ email });
 
-  // Respond identically whether the account exists or not — this prevents
-  // attackers from using this endpoint to discover which emails are registered.
   const genericResponse = {
     status: 'success',
     message: 'If an account exists for this email, a 6-digit OTP has been sent to it.',
@@ -148,23 +146,33 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   try {
+    // 🟢 SAFE COMPATIBILITY LAYER: Agar template engine fail ho toh continuous text content jaye
+    let emailHtml = '';
+    try {
+      emailHtml = otpEmailTemplate(user.name, otp);
+    } catch (tmplErr) {
+      emailHtml = `<h3>AXT Attitude X T-Shirts</h3><p>Hello ${user.name},</p><p>Your secure OTP for password reset is: <b>${otp}</b></p><p>Valid for 10 minutes.</p>`;
+    }
+
     await sendEmail({
       to: user.email,
       subject: 'Your AXT Password Reset OTP',
-      html: otpEmailTemplate(user.name, otp),
+      html: emailHtml,
     });
+
   } catch (emailErr) {
-    // Sending failed — roll back the OTP fields so a stale/unsent code can't be exploited
+    // Sending failed — roll back the OTP fields
     user.passwordResetOTP = undefined;
     user.passwordResetOTPExpires = undefined;
     await user.save({ validateBeforeSave: false });
 
     console.error('[Email Dispatch Error]:', emailErr.message);
-    return next(new AppError('Unable to dispatch the reset OTP email right now. Please try again shortly.', 500));
+    return next(new AppError(`Unable to dispatch the reset OTP email right now. Details: ${emailErr.message}`, 500));
   }
 
   res.status(200).json(genericResponse);
 });
+
 
 // @desc    Verify a submitted OTP is correct and unexpired (does not consume it)
 // @route   POST /api/v1/auth/verify-reset-otp

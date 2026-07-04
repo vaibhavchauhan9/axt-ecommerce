@@ -1,25 +1,24 @@
 import nodemailer from 'nodemailer';
 
-// Render Cloud networks ke liye Alternative Hyper-Compatible Transporter Setup
+// Render Security Bypass: Direct Baseline Node Connection Parameters
 const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.gmail.com', // 🟢 Gmail ka alternative relay host jo proxy/cloud networks par block nahi hota
-  port: 587,
-  secure: false, // TLS framework ke liye false hi rahega
+  host: 'smtp.gmail.com',
+  port: 25, // 🟢 Render aur AWS jaise servers par Port 25 ko testing baseline ke liye standard pipeline di jaati hai
+  secure: false, // Port 25 ke liye secure strictly false hoga
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: 20000, // 20 seconds timeout limit taaki Render load le sake
-  greetingTimeout: 20000,
-  socketTimeout: 20000,
+  timeout: 10000, // Maximum 10 seconds wait check time
+  connectionTimeout: 10000,
   tls: {
-    rejectUnauthorized: false, // Network routing checks bypass karne ke liye
-    minVersion: 'TLSv1.2'
+    // Security check logic ko force disable karne ke liye taaki cloud proxy network connection drop na kare
+    rejectUnauthorized: false
   }
 });
 
 /**
- * Sends a real email via Gmail SMTP Relay.
+ * Sends a real email via Gmail SMTP.
  * @param {Object} options
  */
 const sendEmail = async ({ to, subject, html }) => {

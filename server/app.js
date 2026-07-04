@@ -84,6 +84,15 @@ app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/cart', cartRouter);
 app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/payments', paymentRouter);
+// Admin data must always be fresh — never served from browser/proxy cache,
+// which was causing the admin dashboard to show stale (empty) order lists
+// via 304 Not Modified responses after new orders were placed.
+app.use('/api/v1/admin', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
 app.use('/api/v1/admin', adminRouter);
 
 // 11. Unhandled Route Capturer Engine (Catches anything not matched by mounted routers)

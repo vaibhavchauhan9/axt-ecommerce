@@ -1,20 +1,20 @@
 import nodemailer from 'nodemailer';
 
-// Render Security Bypass: Direct Baseline Node Connection Parameters
+// Gmail SMTP over the secure SSL port. Port 25 is blocked by virtually every
+// cloud host (Render, Railway, Heroku, AWS, etc.) to prevent spam relay, which
+// caused every outbound email attempt to hang until the connection timed out.
+// Port 465 (SSL) is the correct port for authenticated Gmail SMTP submission
+// and is not blocked by these providers.
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 25, // 🟢 Render aur AWS jaise servers par Port 25 ko testing baseline ke liye standard pipeline di jaati hai
-  secure: false, // Port 25 ke liye secure strictly false hoga
+  port: 465,
+  secure: true, // true for port 465, false for port 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
   timeout: 10000, // Maximum 10 seconds wait check time
   connectionTimeout: 10000,
-  tls: {
-    // Security check logic ko force disable karne ke liye taaki cloud proxy network connection drop na kare
-    rejectUnauthorized: false
-  }
 });
 
 /**

@@ -1,22 +1,23 @@
 import nodemailer from 'nodemailer';
 
-// Reusable transporter targeting Gmail's SMTP service.
-// Requires a Google Account "App Password" (NOT your normal Gmail password) —
-// Google Account > Security > 2-Step Verification > App Passwords.
+// Render production compatible configuration targeting port 587 (TLS)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // port 587 ke liye false hona chahiye, isse TLS encryption use hota hai
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  tls: {
+    // Render/Cloud networks par self-signed certificate errors ko bypass karne ke liye
+    rejectUnauthorized: false
+  }
 });
 
 /**
  * Sends a real email via Gmail SMTP.
  * @param {Object} options
- * @param {string} options.to - Recipient's email address
- * @param {string} options.subject - Email subject line
- * @param {string} options.html - HTML body content
  */
 const sendEmail = async ({ to, subject, html }) => {
   await transporter.sendMail({

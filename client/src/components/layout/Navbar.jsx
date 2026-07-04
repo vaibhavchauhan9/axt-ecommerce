@@ -1,24 +1,15 @@
 import logo from '../../assets/axt.png'; // Ensure the filename matches yours perfectly
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Heart, ShoppingCart, User } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 
 export default function Navbar() {
-  const { toggleCartDrawer, toggleSidebar } = useUI();
+  const { toggleCartDrawer, toggleSidebar, toggleSearchBar } = useUI();
   const { cartItemCount } = useCart();
   const { wishlistCount } = useWishlist();
-  const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
-    }
-  };
 
   return (
     <header className="w-full bg-black h-16 flex items-center px-4 md:px-6 border-b border-neutral-800 select-none z-50 fixed top-0 left-0">
@@ -36,35 +27,29 @@ export default function Navbar() {
           </div>
         </button>
 
-        {/* Center-Left: Pure Circular Brand Identity Logo */}
-       {/* Center-Left: Actual Brand Identity Logo */}
-<Link to="/" className="shrink-0 flex items-center justify-center">
-  <img 
-    src={logo} 
-    alt="AXT Logo" 
-    className="h-10 w-auto object-contain drop-shadow-[0px_0px_4px_rgba(255,255,255,0.2)]" 
-  />
-</Link>
-
-        {/* Center: Exact Pill-Capsule Embedded Search Bar */}
-        <form 
-          onSubmit={handleSearchSubmit}
-          className="flex-1 max-w-xl relative mx-2 hidden sm:block"
-        >
-          <input 
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder=""
-            className="w-full bg-white h-8 rounded-full pl-4 pr-10 text-sm font-sans text-black focus:outline-none focus:ring-2 focus:ring-[#FAB116] transition-all"
+        {/* Center-Left: Actual Brand Identity Logo */}
+        <Link to="/" className="shrink-0 flex items-center justify-center">
+          <img 
+            src={logo} 
+            alt="AXT Logo" 
+            className="h-10 w-auto object-contain drop-shadow-[0px_0px_4px_rgba(255,255,255,0.2)]" 
           />
-          <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-black">
-            <Search size={16} strokeWidth={2.5} />
-          </button>
-        </form>
+        </Link>
+
+        {/* Spacer pushes the icon deck to the right on all screen sizes */}
+        <div className="flex-1" />
 
         {/* Right Side: Essential Icon Utility Deck */}
         <div className="flex items-center gap-4 md:gap-6 text-white shrink-0">
+          {/* Search Icon - opens the full-screen SearchOverlay */}
+          <button
+            onClick={toggleSearchBar}
+            className="hover:text-[#FAB116] transition-colors"
+            aria-label="Search"
+          >
+            <Search size={22} strokeWidth={2} />
+          </button>
+
           {/* Wishlist Heart Icon */}
           <Link to="/wishlist" className="hover:text-[#FAB116] transition-colors relative">
             <Heart size={22} strokeWidth={2} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : 'text-red-500 hover:fill-red-500 transition-all'} />

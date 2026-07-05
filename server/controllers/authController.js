@@ -137,7 +137,7 @@ export const logout = asyncHandler(async (req, res, net) => {
     httpOnly: true,
     expires: new Date(Date.now() + 10 * 1000), // Invalidate within ten seconds
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   });
 
   res.status(200).json({

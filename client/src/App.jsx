@@ -19,7 +19,6 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import VerifyEmail from './pages/VerifyEmail';
 
 // Context State Architecture Layers
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -27,6 +26,7 @@ import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { UIProvider } from './context/UIContext';
 import { ToastProvider } from './context/ToastContext'; // 🟢 YAHAN ADD KIYA HAI
+import { NotificationProvider } from './context/NotificationContext';
 
 // Temporary placeholder layouts for core architectural pages
 const MockFooter = () => <footer className="p-8 border-t border-white/5 bg-neutral-950 text-center text-xs text-neutral-500">© 2026 AXT – ATTITUDE X T-SHIRTS. ALL RIGHTS RESERVED.</footer>;
@@ -51,6 +51,7 @@ export default function App() {
       {/* 🟢 TOAST PROVIDER SE POORI APP KO WRAP KIYA */}
       <ToastProvider> 
         <AuthProvider>
+          <NotificationProvider>
           <CartProvider>
             <WishlistProvider>
               <UIProvider>
@@ -70,7 +71,6 @@ export default function App() {
                         <Route path="/product/:slug" element={<ProductDetails />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
-                        <Route path="/verify-email" element={<VerifyEmail />} />
 
                         {/* Private Customer Operations Space */}
                         <Route path="/cart" element={
@@ -118,6 +118,7 @@ export default function App() {
               </UIProvider>
             </WishlistProvider>
           </CartProvider>
+          </NotificationProvider>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>

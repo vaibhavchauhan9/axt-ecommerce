@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Settings, LogOut, ArrowRight, User as UserIcon } from 'lucide-react';
+import { Package, Settings, LogOut, ArrowRight, User as UserIcon, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
+import AddressBook from '../components/profile/AddressBook';
+import OrderDetailsModal from '../components/profile/OrderDetailsModal';
 
 export default function Profile() {
   const { user, logoutUser } = useAuth();
@@ -15,6 +17,7 @@ export default function Profile() {
     phoneNumber: user?.phoneNumber || ''
   });
   const [updateStatus, setUpdateStatus] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
 
   useEffect(() => {
     const fetchMyOrders = async () => {
@@ -73,6 +76,12 @@ export default function Profile() {
               <Settings size={16} /> Identity Settings
             </button>
             <button 
+              onClick={() => setActiveTab('addresses')}
+              className={`flex items-center gap-3 w-full p-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'addresses' ? 'bg-brand-accentNeon/10 border border-brand-accentNeon text-white' : 'bg-neutral-900/40 border border-white/5 text-neutral-400 hover:bg-neutral-900'}`}
+            >
+              <MapPin size={16} /> Saved Addresses
+            </button>
+            <button 
               onClick={logoutUser}
               className="flex items-center gap-3 w-full p-4 rounded-xl text-xs font-bold uppercase tracking-wider text-red-400 bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 transition-all mt-4"
             >
@@ -103,7 +112,11 @@ export default function Profile() {
               ) : (
                 <div className="flex flex-col gap-4">
                   {orders.map(order => (
-                    <div key={order._id} className="bg-neutral-900/40 border border-white/5 rounded-xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-white/20 transition-colors">
+                    <div
+                      key={order._id}
+                      onClick={() => setSelectedOrderId(order._id)}
+                      className="bg-neutral-900/40 border border-white/5 rounded-xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-white/20 transition-colors cursor-pointer"
+                    >
                       <div>
                         <p className="text-[10px] text-neutral-500 font-mono tracking-widest mb-1">ID: {order._id}</p>
                         <p className="text-sm font-bold text-white mb-2">Total: ₹{order.totalPrice.toFixed(2)}</p>
@@ -160,9 +173,16 @@ export default function Profile() {
               </form>
             </div>
           )}
+
+          {/* Saved Addresses Tab */}
+          {activeTab === 'addresses' && <AddressBook />}
           
         </main>
       </div>
+
+      {selectedOrderId && (
+        <OrderDetailsModal orderId={selectedOrderId} onClose={() => setSelectedOrderId(null)} />
+      )}
     </div>
   );
 }

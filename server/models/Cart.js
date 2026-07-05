@@ -20,6 +20,11 @@ const cartItemSchema = new mongoose.Schema({
     name: { type: String, required: true },
     hex: { type: String, required: true },
   },
+  // NEW: marks an item as parked in "Save for Later" instead of the active cart
+  savedForLater: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const cartSchema = new mongoose.Schema(
@@ -31,6 +36,13 @@ const cartSchema = new mongoose.Schema(
       unique: true, // One persistent card stack index record per user context
     },
     items: [cartItemSchema],
+    // NEW: currently applied coupon snapshot (denormalized so past totals stay stable)
+    coupon: {
+      code: { type: String, default: null },
+      discountType: { type: String, enum: ['percentage', 'flat'], default: null },
+      discountValue: { type: Number, default: null },
+      discountAmount: { type: Number, default: 0 },
+    },
   },
   { timestamps: true }
 );

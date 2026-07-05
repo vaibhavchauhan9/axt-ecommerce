@@ -1,14 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, Tag, X, BookmarkPlus, RotateCcw } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function Cart() {
-  const { cart, cartLoading, cartTotalAmount, updateItemQuantity, removeItemFromCart } = useCart();
+  const {
+    activeItems,
+    savedItems,
+    cartLoading,
+    couponLoading,
+    cartTotalAmount,
+    discountAmount,
+    cart,
+    updateItemQuantity,
+    removeItemFromCart,
+    saveForLater,
+    moveToCart,
+    applyCoupon,
+    removeCoupon,
+  } = useCart();
   const navigate = useNavigate();
+  const [couponInput, setCouponInput] = useState('');
 
-  const items = cart.items || [];
-  const isEmpty = items.length === 0;
+  const isEmpty = activeItems.length === 0;
 
   const handleQtyChange = (item, delta) => {
     const nextQty = item.quantity + delta;
@@ -17,8 +31,14 @@ export default function Cart() {
     updateItemQuantity(item._id, nextQty);
   };
 
-  const shippingEstimate = cartTotalAmount > 0 && cartTotalAmount < 75 ? 6.99 : 0;
-  const orderTotal = cartTotalAmount + shippingEstimate;
+  const handleApplyCoupon = (e) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+    applyCoupon(couponInput.trim());
+  };
+
+  const shippingEstimate = cartTotalAmount > 0 && cartTotalAmount - discountAmount < 75 ? 6.99 : 0;
+  const orderTotal = Math.max(cartTotalAmount - discountAmount, 0) + shippingEstimate;
 
   if (cartLoading && isEmpty) {
     return (
@@ -28,7 +48,7 @@ export default function Cart() {
     );
   }
 
-  if (isEmpty) {
+  if (isEmpty && savedItems.length === 0) {
     return (
       <div className="min-h-screen bg-brand-black flex flex-col items-center justify-center px-4 text-center gap-6">
         <ShoppingBag size={64} className="text-neutral-700" />
@@ -65,7 +85,13 @@ export default function Cart() {
 
           {/* Items List */}
           <div className="lg:col-span-2 flex flex-col gap-4">
-            {items.map((item) => {
+            {isEmpty && (
+              <div className="glass-card p-6 border border-white/5 text-center text-neutral-400 text-sm">
+                Your bag is empty. Items saved for later are below.
+              </div>
+            )}
+
+            {activeItems.map((item) => {
               const price = item.product?.discountPrice || item.product?.price || 0;
               const lineTotal = price * item.quantity;
               const outOfStock = !item.product || item.product.stock === 0;
@@ -117,59 +143,156 @@ export default function Cart() {
 
                     <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-between gap-3">
                       <span className="font-black text-base text-white">₹{lineTotal.toFixed(2)}</span>
-                      <button
-                        onClick={() => removeItemFromCart(item._id)}
-                        className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 size={14} /> Remove
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => saveForLater(item._id)}
+                          className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-brand-accentNeon transition-colors"
+                        >
+                          <BookmarkPlus size={14} /> Save for Later
+                        </button>
+                        <button
+                          onClick={() => removeItemFromCart(item._id)}
+                          className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={14} /> Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               );
             })}
+
+            {/* Saved for Later */}
+            {savedItems.length > 0 && (
+              <div className="mt-8">
+                <h2 className="font-display font-black text-sm uppercase tracking-widest text-neutral-400 mb-4">
+                  Saved for Later ({savedItems.length})
+                </h2>
+                <div className="flex flex-col gap-4">
+                  {savedItems.map((item) => {
+                    const price = item.product?.discountPrice || item.product?.price || 0;
+                    return (
+                      <div
+                        key={item._id}
+                        className="glass-card p-4 border border-white/5 flex items-center gap-4 opacity-80"
+                      >
+                        <img
+                          src={item.product?.images?.[0]}
+                          alt={item.product?.name}
+                          className="w-16 h-16 object-cover rounded-lg border border-white/10 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-xs uppercase text-white line-clamp-1">
+                            {item.product?.name || 'Product unavailable'}
+                          </h3>
+                          <p className="text-[11px] text-neutral-400">
+                            Size: {item.size} &nbsp;|&nbsp; Qty: {item.quantity}
+                          </p>
+                          <p className="text-brand-accentNeon font-bold text-xs mt-1">₹{price.toFixed(2)}</p>
+                        </div>
+                        <div className="flex flex-col gap-2 items-end">
+                          <button
+                            onClick={() => moveToCart(item._id)}
+                            className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-brand-accentNeon hover:text-white transition-colors"
+                          >
+                            <RotateCcw size={13} /> Move to Bag
+                          </button>
+                          <button
+                            onClick={() => removeItemFromCart(item._id)}
+                            className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 size={13} /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Order Summary Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="glass-card p-6 border border-white/5 sticky top-24 flex flex-col gap-4">
-              <h2 className="font-display font-black text-sm uppercase tracking-widest text-brand-accentNeon mb-2">
-                Order Summary
-              </h2>
+          {!isEmpty && (
+            <div className="lg:col-span-1">
+              <div className="glass-card p-6 border border-white/5 sticky top-24 flex flex-col gap-4">
+                <h2 className="font-display font-black text-sm uppercase tracking-widest text-brand-accentNeon mb-2">
+                  Order Summary
+                </h2>
 
-              <div className="flex justify-between text-sm text-neutral-300">
-                <span>Subtotal ({items.reduce((c, i) => c + i.quantity, 0)} items)</span>
-                <span className="font-bold text-white">₹{cartTotalAmount.toFixed(2)}</span>
+                {/* Coupon Box */}
+                {cart.coupon?.code ? (
+                  <div className="flex items-center justify-between bg-white/5 border border-brand-accentNeon/30 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Tag size={14} className="text-brand-accentNeon" />
+                      <span className="font-bold text-white">{cart.coupon.code}</span>
+                      <span className="text-neutral-400">applied</span>
+                    </div>
+                    <button onClick={removeCoupon} className="text-neutral-400 hover:text-red-400">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      placeholder="Coupon code"
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs uppercase tracking-wide text-white placeholder-neutral-500 focus:outline-none focus:border-brand-accentNeon"
+                    />
+                    <button
+                      type="submit"
+                      disabled={couponLoading || !couponInput.trim()}
+                      className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest bg-white/10 hover:bg-brand-accentNeon hover:text-black rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      Apply
+                    </button>
+                  </form>
+                )}
+
+                <div className="flex justify-between text-sm text-neutral-300">
+                  <span>Subtotal ({activeItems.reduce((c, i) => c + i.quantity, 0)} items)</span>
+                  <span className="font-bold text-white">₹{cartTotalAmount.toFixed(2)}</span>
+                </div>
+
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-brand-accentNeon">
+                    <span>Coupon Discount</span>
+                    <span className="font-bold">−₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-sm text-neutral-300">
+                  <span>Shipping</span>
+                  <span className="font-bold text-white">
+                    {shippingEstimate === 0 ? 'Free' : `₹${shippingEstimate.toFixed(2)}`}
+                  </span>
+                </div>
+
+                {shippingEstimate > 0 && (
+                  <p className="text-[10px] text-neutral-500">
+                    Add ₹{(75 - (cartTotalAmount - discountAmount)).toFixed(2)} more to unlock free shipping.
+                  </p>
+                )}
+
+                <div className="h-px bg-white/10 my-2"></div>
+
+                <div className="flex justify-between text-base">
+                  <span className="font-bold uppercase tracking-wide">Total</span>
+                  <span className="font-black text-brand-accentNeon">₹{orderTotal.toFixed(2)}</span>
+                </div>
+
+                <button
+                  onClick={() => navigate('/checkout')}
+                  className="w-full btn-primary flex items-center justify-center gap-2 mt-4"
+                >
+                  Proceed to Checkout <ArrowRight size={16} />
+                </button>
               </div>
-
-              <div className="flex justify-between text-sm text-neutral-300">
-                <span>Shipping</span>
-                <span className="font-bold text-white">
-                  {shippingEstimate === 0 ? 'Free' : `₹${shippingEstimate.toFixed(2)}`}
-                </span>
-              </div>
-
-              {shippingEstimate > 0 && (
-                <p className="text-[10px] text-neutral-500">
-                  Add ₹{(75 - cartTotalAmount).toFixed(2)} more to unlock free shipping.
-                </p>
-              )}
-
-              <div className="h-px bg-white/10 my-2"></div>
-
-              <div className="flex justify-between text-base">
-                <span className="font-bold uppercase tracking-wide">Total</span>
-                <span className="font-black text-brand-accentNeon">₹{orderTotal.toFixed(2)}</span>
-              </div>
-
-              <button
-                onClick={() => navigate('/checkout')}
-                className="w-full btn-primary flex items-center justify-center gap-2 mt-4"
-              >
-                Proceed to Checkout <ArrowRight size={16} />
-              </button>
             </div>
-          </div>
+          )}
 
         </div>
       </div>

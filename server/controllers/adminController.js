@@ -1,6 +1,7 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import User from '../models/User.js';
+import Coupon from '../models/Coupon.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/appError.js';
 
@@ -196,5 +197,135 @@ export const toggleBlockCustomer = asyncHandler(async (req, res, next) => {
     status: 'success',
     message: customer.isActive ? 'Customer unblocked.' : 'Customer blocked.',
     data: { customer },
+  });
+});
+
+// ==========================================================
+// Coupon Management
+// ==========================================================
+
+// @desc    List all coupons, most recently created first
+// @route   GET /api/v1/admin/coupons
+// @access  Private/Admin
+export const getAllCoupons = asyncHandler(async (req, res, next) => {
+  const coupons = await Coupon.find().sort('-createdAt');
+
+  res.status(200).json({
+    status: 'success',
+    results: coupons.length,
+    data: { coupons },
+  });
+});
+
+// @desc    Create a new discount coupon
+// @route   POST /api/v1/admin/coupons
+// @access  Private/Admin
+export const createCoupon = asyncHandler(async (req, res, next) => {
+  const {
+    code,
+    discountType,
+    discountValue,
+    minCartValue,
+    maxDiscountAmount,
+    expiresAt,
+    usageLimit,
+    isActive,
+  } = req.body;
+
+  if (!code || !discountType || discountValue === undefined) {
+    return next(new AppError('Code, discount type, and discount value are required.', 400));
+  }
+
+  if (discountType === 'percentage' && discountValue > 100) {
+    return next(new AppError('Percentage discount cannot exceed 100.', 400));
+  }
+
+  try {
+    const coupon = await Coupon.create({
+      code: code.trim().toUpperCase(),
+      discountType,
+      discountValue,
+      minCartValue: minCartValue || 0,
+      maxDiscountAmount: maxDiscountAmount || null,
+      expiresAt: expiresAt || null,
+      usageLimit: usageLimit || null,
+      isActive: isActive !== undefined ? isActive : true,
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Coupon created successfully.',
+      data: { coupon },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return next(new AppError('A coupon with this code already exists.', 400));
+    }
+    throw error;
+  }
+});
+
+// @desc    Update an existing coupon's rules or status
+// @route   PATCH /api/v1/admin/coupons/:id
+// @access  Private/Admin
+export const updateCoupon = asyncHandler(async (req, res, next) => {
+  const coupon = await Coupon.findById(req.params.id);
+  if (!coupon) {
+    return next(new AppError('Coupon not found.', 404));
+  }
+
+  const {
+    code,
+    discountType,
+    discountValue,
+    minCartValue,
+    maxDiscountAmount,
+    expiresAt,
+    usageLimit,
+    isActive,
+  } = req.body;
+
+  if (discountType === 'percentage' && discountValue > 100) {
+    return next(new AppError('Percentage discount cannot exceed 100.', 400));
+  }
+
+  if (code !== undefined) coupon.code = code.trim().toUpperCase();
+  if (discountType !== undefined) coupon.discountType = discountType;
+  if (discountValue !== undefined) coupon.discountValue = discountValue;
+  if (minCartValue !== undefined) coupon.minCartValue = minCartValue;
+  if (maxDiscountAmount !== undefined) coupon.maxDiscountAmount = maxDiscountAmount || null;
+  if (expiresAt !== undefined) coupon.expiresAt = expiresAt || null;
+  if (usageLimit !== undefined) coupon.usageLimit = usageLimit || null;
+  if (isActive !== undefined) coupon.isActive = isActive;
+
+  try {
+    await coupon.save();
+  } catch (error) {
+    if (error.code === 11000) {
+      return next(new AppError('A coupon with this code already exists.', 400));
+    }
+    throw error;
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Coupon updated successfully.',
+    data: { coupon },
+  });
+});
+
+// @desc    Permanently delete a coupon
+// @route   DELETE /api/v1/admin/coupons/:id
+// @access  Private/Admin
+export const deleteCoupon = asyncHandler(async (req, res, next) => {
+  const coupon = await Coupon.findByIdAndDelete(req.params.id);
+  if (!coupon) {
+    return next(new AppError('Coupon not found.', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Coupon deleted.',
+    data: null,
   });
 });

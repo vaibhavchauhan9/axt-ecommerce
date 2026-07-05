@@ -6,8 +6,9 @@ import { useToast } from './ToastContext';
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState({ items: [] });
+  const [cart, setCart] = useState({ items: [], coupon: null });
   const [cartLoading, setCartLoading] = useState(false);
+  const [couponLoading, setCouponLoading] = useState(false);
   const { user } = useAuth();
   const { showToast } = useToast();
 
@@ -16,7 +17,7 @@ export const CartProvider = ({ children }) => {
     if (user) {
       fetchCartState();
     } else {
-      setCart({ items: [] }); // Flush localized parameters on session logs out
+      setCart({ items: [], coupon: null }); // Flush localized parameters on session logs out
     }
   }, [user]);
 
@@ -85,16 +86,96 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // Computes active price parameters and counts dynamically
-  const cartTotalAmount = cart.items.reduce((total, item) => {
+  // NEW: Save for Later
+  const saveForLater = async (itemId) => {
+    try {
+      const { data } = await apiClient.patch(`/cart/${itemId}/save-for-later`);
+      setCart(data.data.cart);
+      showToast('Saved for later.', 'info');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to save item for later.';
+      showToast(message, 'error');
+      return { success: false, message };
+    }
+  };
+
+  const moveToCart = async (itemId) => {
+    try {
+      const { data } = await apiClient.patch(`/cart/${itemId}/move-to-cart`);
+      setCart(data.data.cart);
+      showToast('Moved to bag.', 'success');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to move item to bag.';
+      showToast(message, 'error');
+      return { success: false, message };
+    }
+  };
+
+  // NEW: Coupon handling
+  const applyCoupon = async (code) => {
+    setCouponLoading(true);
+    try {
+      const { data } = await apiClient.post('/cart/apply-coupon', { code });
+      setCart(data.data.cart);
+      showToast('Coupon applied!', 'success');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Invalid or expired coupon.';
+      showToast(message, 'error');
+      return { success: false, message };
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = async () => {
+    try {
+      const { data } = await apiClient.delete('/cart/coupon');
+      setCart(data.data.cart);
+      showToast('Coupon removed.', 'info');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to remove coupon.';
+      showToast(message, 'error');
+      return { success: false, message };
+    }
+  };
+
+  // Only active (not saved-for-later) items count toward cart totals
+  const activeItems = cart.items.filter((item) => !item.savedForLater);
+  const savedItems = cart.items.filter((item) => item.savedForLater);
+
+  const cartTotalAmount = activeItems.reduce((total, item) => {
     const itemPrice = item.product?.discountPrice || item.product?.price || 0;
     return total + itemPrice * item.quantity;
   }, 0);
 
-  const cartItemCount = cart.items.reduce((count, item) => count + item.quantity, 0);
+  const cartItemCount = activeItems.reduce((count, item) => count + item.quantity, 0);
+  const discountAmount = cart.coupon?.discountAmount || 0;
 
   return (
-    <CartContext.Provider value={{ cart, cartLoading, addItemToCart, updateItemQuantity, removeItemFromCart, fetchCartState, cartTotalAmount, cartItemCount }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        activeItems,
+        savedItems,
+        cartLoading,
+        couponLoading,
+        addItemToCart,
+        updateItemQuantity,
+        removeItemFromCart,
+        saveForLater,
+        moveToCart,
+        applyCoupon,
+        removeCoupon,
+        fetchCartState,
+        cartTotalAmount,
+        cartItemCount,
+        discountAmount,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

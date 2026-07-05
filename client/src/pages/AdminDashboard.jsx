@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, ShoppingBag, AlertTriangle, TrendingUp, IndianRupee, Package, Plus, Trash2, Pencil, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, AlertTriangle, TrendingUp, IndianRupee, Package, Plus, Trash2, Pencil, X, Users } from 'lucide-react';
 import apiClient from '../services/apiClient';
+import CustomerManagement from '../components/admin/CustomerManagement';
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -268,6 +269,12 @@ export default function AdminDashboard() {
               className={`flex items-center gap-3 w-full p-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'orders' ? 'bg-white text-black' : 'bg-neutral-900/40 border border-white/5 text-neutral-400 hover:bg-neutral-900 hover:text-white'}`}
             >
               <ShoppingBag size={16} /> Order Pipeline
+            </button>
+            <button 
+              onClick={() => setActiveTab('customers')}
+              className={`flex items-center gap-3 w-full p-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'customers' ? 'bg-white text-black' : 'bg-neutral-900/40 border border-white/5 text-neutral-400 hover:bg-neutral-900 hover:text-white'}`}
+            >
+              <Users size={16} /> Customers
             </button>
           </nav>
         </aside>
@@ -738,6 +745,9 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+
+          {/* TAB 4: Customer Management */}
+          {activeTab === 'customers' && <CustomerManagement />}
 
         </main>
       </div>

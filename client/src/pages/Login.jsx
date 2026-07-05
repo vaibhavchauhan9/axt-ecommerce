@@ -34,6 +34,8 @@ export default function Login() {
     if (result.success) {
       const origin = location.state?.from?.pathname || '/';
       navigate(origin);
+    } else if (result.message?.toLowerCase().includes('verify your email')) {
+      navigate('/verify-email', { state: { email, autoSend: true } });
     } else {
       setError(result.message);
       setIsSubmitting(false);
@@ -42,17 +44,14 @@ export default function Login() {
 
   return (
     <div className="w-full min-h-screen bg-[#404040] flex flex-col items-center justify-start pt-12 pb-20 px-4 select-none">
-      {/* Big Custom Brand Header Layer matching 1000000466.jpg */}
       <div className="mb-10 flex items-center justify-center">
- {/* Replace the img tag in BOTH Login.jsx and Register.jsx with this: */}
-<img 
-  src={logo} 
-  alt="AXT Logo" 
-  className="w-20 h-20 rounded-full object-contain shrink-0 drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]"
-/>
-</div>
+        <img 
+          src={logo} 
+          alt="AXT Logo" 
+          className="w-20 h-20 rounded-full object-contain shrink-0 drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]"
+        />
+      </div>
 
-      {/* Solid Black Card Container with Sharp White Border Framing */}
       <div className="w-full max-w-sm bg-black border-[3px] border-white p-6 md:p-8 flex flex-col items-center">
         <h1 className="font-serif font-bold text-3xl md:text-4xl text-white mb-8 text-center tracking-wide">
           Login
@@ -65,7 +64,6 @@ export default function Login() {
             </div>
           )}
 
-          {/* Username/Email Input Container */}
           <div className="w-full bg-[#333333] h-12 rounded-full px-4 flex items-center gap-3 border border-transparent focus-within:border-[#008BE5] transition-all">
             <User className="text-white shrink-0" size={22} fill="white" />
             <input 
@@ -78,7 +76,6 @@ export default function Login() {
             />
           </div>
 
-          {/* Password Input Container with Visibility Toggle */}
           <div className="w-full bg-[#333333] h-12 rounded-full px-4 flex items-center gap-3 border border-transparent focus-within:border-[#008BE5] transition-all relative">
             <Lock className="text-white shrink-0" size={22} />
             <input 
@@ -98,7 +95,6 @@ export default function Login() {
             </button>
           </div>
 
-          {/* Remember Me Option */}
           <div className="flex items-center justify-between gap-2 pl-2 pr-1">
             <div className="flex items-center gap-2">
               <input 
@@ -119,7 +115,6 @@ export default function Login() {
             </button>
           </div>
 
-          {/* Electric Blue Action Accent Button */}
           <button 
             type="submit" 
             disabled={isSubmitting}

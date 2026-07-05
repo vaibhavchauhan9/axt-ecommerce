@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { AlertCircle, MailCheck } from 'lucide-react';
@@ -15,8 +15,24 @@ export default function VerifyEmail() {
   const [info, setInfo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const hasAutoSent = useRef(false);
 
-  // No email in state (e.g. page refreshed directly) — send them back to register
+  useEffect(() => {
+    if (location.state?.autoSend && email && !hasAutoSent.current) {
+      hasAutoSent.current = true;
+      (async () => {
+        setIsResending(true);
+        const result = await resendVerificationOtp(email);
+        setIsResending(false);
+        if (result.success) {
+          setInfo('We sent a verification code to your email — enter it below.');
+        } else {
+          setError(result.message);
+        }
+      })();
+    }
+  }, [location.state, email, resendVerificationOtp]);
+
   if (!email) {
     return (
       <div className="w-full min-h-screen bg-[#404040] flex flex-col items-center justify-center px-4 text-center">
@@ -107,4 +123,4 @@ export default function VerifyEmail() {
       </div>
     </div>
   );
-}
+    }

@@ -1,40 +1,89 @@
+import Order from '../models/Order.js';
+import Product from '../models/Product.js';
 import User from '../models/User.js';
 import asyncHandler from '../utils/asyncHandler.js';
-import AppError from '../utils/appError.js';
-import { generateTokens } from '../utils/generateToken.js';
-import sendEmail from '../utils/sendEmail.js';
-import otpEmailTemplate from '../utils/otpEmailTemplate.js';
-import jwt from 'jsonwebtoken';
-import { OAuth2Client } from 'google-auth-library';
 
-const googleOAuthClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// @desc    Compile high-level dashboard analytic metrics
+// @route   GET /api/v1/admin/dashboard-stats
+// @access  Private/Admin
+export const getDashboardStats = asyncHandler(async (req, res, next) => {
+  // 1. Concurrent counts execution using optimized indexing loops
+  const totalCustomers = await User.countDocuments({ role: 'customer' });
+  const totalProducts = await Product.countDocuments();
+  const totalOrders = await Order.countDocuments();
 
-// @desc    Register a new premium customer account footprint
-// @route   POST /api/v1/auth/register
-// @access  Public
-export const register = asyncHandler(async (req, res, next) => {
-  const { name, email, password, phoneNumber } = req.body;
+  // 2. High-Performance Aggregation: Compute lifetime gross revenue
+  const financialStats = await Order.aggregate([
+    { $match: { isPaid: true } },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: '$totalPrice' },
+      },
+    },
+  ]);
 
-  // 1. Verify user does not already exist within database registry
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    return next(new AppError('An account with this email address already exists.', 400));
-  }
+  const totalRevenue = financialStats.length > 0 ? financialStats[0].totalRevenue : 0;
 
-  // 2. Initialize the user profile document (Password is automatically hashed via Mongoose pre-save hook)
-  const newUser = await User.create({
-    name,
-    email,
-    password,
-    phoneNumber,
+  // 3. Low Stock Alert Pipeline (Threshold: < 5 pieces remaining)
+  const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
+    .select('name sku stock price')
+    .limit(10);
+
+  // 4. Monthly Sales Velocity Matrix (Last 6 Months Trend)
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+  const monthlySalesTrend = await Order.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: sixMonthsAgo },
+        isPaid: true,
+      },
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' },
+        },
+        monthlyRevenue: { $sum: '$totalPrice' },
+        orderCount: { $sum: 1 },
+      },
+    },
+    { $sort: { '_id.year': 1, '_id.month': 1 } },
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      summary: {
+        totalRevenue,
+        totalOrders,
+        totalProducts,
+        totalCustomers,
+      },
+      lowStockAlerts: lowStockProducts,
+      salesTrend: monthlySalesTrend,
+    },
   });
+});
 
-  // 3. Generate and email a 6-digit verification OTP — the account stays unverified
-  // (and cannot log in) until this OTP is confirmed via /verify-email.
-  const otp = newUser.createEmailVerificationOTP();
-  await newUser.save({ validateBeforeSave: false });
+// @desc    Fetch comprehensive detailed sales ledger for export
+// @route   GET /api/v1/admin/sales-report
+// @access  Private/Admin
+export const getSalesReport = asyncHandler(async (req, res, next) => {
+  const reports = await Order.find({ isPaid: true })
+    .populate('user', 'name email')
+    .select('createdAt totalPrice paymentMethod itemsPrice orderStatus billingAddress')
+    .sort('-createdAt');
 
-  try {
+  res.status(200).json({
+    status: 'success',
+    results: reports.length,
+    data: { reports },
+  });
+});  try {
     let emailHtml = '';
     try {
       emailHtml = otpEmailTemplate(newUser.name, otp);

@@ -5,6 +5,7 @@ import { Search, Heart, ShoppingCart, User } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const { toggleCartDrawer, toggleSidebar, toggleSearchBar } = useUI();
@@ -72,6 +73,9 @@ export default function Navbar() {
               </span>
             )}
           </button>
+
+          {/* Notification Bell */}
+          <NotificationBell />
 
           {/* User Profile Gate */}
           <Link to="/profile" className="hover:text-[#FAB116] transition-colors">

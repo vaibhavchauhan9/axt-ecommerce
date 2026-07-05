@@ -3,6 +3,7 @@ import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/appError.js';
+import { createNotification } from './notificationController.js';
 
 // @desc    Construct a premium baseline order document out of active cart profiles
 // @route   POST /api/v1/orders
@@ -72,6 +73,15 @@ export const createOrder = asyncHandler(async (req, res, next) => {
   cart.items = [];
   await cart.save();
 
+  // 7. Notify the customer that their order was placed successfully
+  await createNotification({
+    user: order.user,
+    title: 'Order Placed',
+    message: `Your order #${order._id.toString().slice(-8).toUpperCase()} has been placed successfully. Total: ₹${totalPrice.toFixed(2)}.`,
+    type: 'ORDER',
+    link: '/profile',
+  });
+
   res.status(201).json({
     status: 'success',
     data: { order },
@@ -129,6 +139,24 @@ export const updateOrderStatus = asyncHandler(async (req, res, next) => {
   }
 
   await order.save();
+
+  // Notify the customer that their order status has changed
+  const statusMessages = {
+    PACKED: 'Your order has been packed and is being prepared for shipment.',
+    SHIPPED: 'Your order has shipped and is on its way to you.',
+    DELIVERED: 'Your order has been delivered. Thank you for shopping with us!',
+    CANCELLED: 'Your order has been cancelled.',
+  };
+
+  if (statusMessages[orderStatus]) {
+    await createNotification({
+      user: order.user,
+      title: `Order ${orderStatus}`,
+      message: `Order #${order._id.toString().slice(-8).toUpperCase()}: ${statusMessages[orderStatus]}`,
+      type: 'ORDER',
+      link: '/profile',
+    });
+  }
 
   res.status(200).json({
     status: 'success',

@@ -75,6 +75,76 @@ export const addAddress = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Fetch every saved address for the authenticated user
+// @route   GET /api/v1/users/address
+// @access  Private
+export const getAddresses = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id);
+
+  res.status(200).json({
+    status: 'success',
+    results: user.addresses.length,
+    data: { addresses: user.addresses },
+  });
+});
+
+// @desc    Update a single saved address by its subdocument id
+// @route   PATCH /api/v1/users/address/:addressId
+// @access  Private
+export const updateAddress = asyncHandler(async (req, res, next) => {
+  const { addressId } = req.params;
+  const { street, city, state, postalCode, country, isDefault } = req.body;
+
+  const user = await User.findById(req.user._id);
+  const address = user.addresses.id(addressId);
+
+  if (!address) {
+    return next(new AppError('Address not found.', 404));
+  }
+
+  if (street !== undefined) address.street = street;
+  if (city !== undefined) address.city = city;
+  if (state !== undefined) address.state = state;
+  if (postalCode !== undefined) address.postalCode = postalCode;
+  if (country !== undefined) address.country = country;
+
+  // If this address is being promoted to default, unset the flag on all others
+  if (isDefault) {
+    user.addresses.forEach((addr) => {
+      addr.isDefault = addr._id.toString() === addressId;
+    });
+  }
+
+  await user.save({ validateBeforeSave: true });
+
+  res.status(200).json({
+    status: 'success',
+    data: { addresses: user.addresses },
+  });
+});
+
+// @desc    Remove a saved address by its subdocument id
+// @route   DELETE /api/v1/users/address/:addressId
+// @access  Private
+export const deleteAddress = asyncHandler(async (req, res, next) => {
+  const { addressId } = req.params;
+
+  const user = await User.findById(req.user._id);
+  const address = user.addresses.id(addressId);
+
+  if (!address) {
+    return next(new AppError('Address not found.', 404));
+  }
+
+  address.deleteOne();
+  await user.save({ validateBeforeSave: true });
+
+  res.status(200).json({
+    status: 'success',
+    data: { addresses: user.addresses },
+  });
+});
+
 // @desc    Fetch the authenticated user's saved wishlist products
 // @route   GET /api/v1/users/wishlist
 // @access  Private

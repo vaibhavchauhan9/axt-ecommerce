@@ -8,6 +8,9 @@ import {
   forgotPassword,
   verifyResetOtp,
   resetPassword,
+  verifyEmail,
+  resendVerificationOtp,
+  googleLogin,
 } from '../controllers/authController.js';
 import {
   validateRegister,
@@ -53,5 +56,9 @@ router.post('/logout', protect, logout);
 router.post('/forgot-password', otpRequestLimiter, validateForgotPassword, forgotPassword);
 router.post('/verify-reset-otp', otpVerifyLimiter, validateVerifyOtp, verifyResetOtp);
 router.post('/reset-password', otpVerifyLimiter, validateResetPassword, resetPassword);
+
+router.post('/verify-email', otpVerifyLimiter, validateVerifyOtp, verifyEmail);
+router.post('/resend-verification-otp', otpRequestLimiter, resendVerificationOtp);
+router.post('/google', googleLogin);
 
 export default router;

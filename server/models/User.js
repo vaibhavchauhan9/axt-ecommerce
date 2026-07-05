@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Please provide a secure password.'],
+      required: [function () { return !this.googleId; }, 'Please provide a secure password.'],
       minlength: [8, 'Password must be at least 8 characters long.'],
       select: false, // Ensures the password field isn't leaked by default in queries
     },
@@ -65,6 +65,22 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+      select: false,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationOTP: {
+      type: String,
+      select: false,
+    },
+    emailVerificationOTPExpires: {
+      type: Date,
+      select: false,
+    },
+    googleId: {
+      type: String,
       select: false,
     },
   },
@@ -118,6 +134,26 @@ userSchema.methods.verifyPasswordResetOTP = function (candidateOtp) {
 
   const hashedCandidate = crypto.createHash('sha256').update(candidateOtp).digest('hex');
   return hashedCandidate === this.passwordResetOTP;
+};
+
+// Instance Method: Generate a 6-digit email-verification OTP (same hash-and-expire pattern
+// as the password-reset OTP), used at registration to confirm the address is real.
+userSchema.methods.createEmailVerificationOTP = function () {
+  const otp = crypto.randomInt(100000, 999999).toString();
+
+  this.emailVerificationOTP = crypto.createHash('sha256').update(otp).digest('hex');
+  this.emailVerificationOTPExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  return otp;
+};
+
+// Instance Method: Verify the submitted email-verification OTP against the stored hash and expiry
+userSchema.methods.verifyEmailVerificationOTP = function (candidateOtp) {
+  if (!this.emailVerificationOTP || !this.emailVerificationOTPExpires) return false;
+  if (this.emailVerificationOTPExpires < Date.now()) return false;
+
+  const hashedCandidate = crypto.createHash('sha256').update(candidateOtp).digest('hex');
+  return hashedCandidate === this.emailVerificationOTP;
 };
 
 const User = mongoose.model('User', userSchema);

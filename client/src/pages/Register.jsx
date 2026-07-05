@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -39,7 +40,7 @@ export default function Register() {
     const result = await registerUser(name, email, password);
     
     if (result.success) {
-      navigate('/');
+      navigate('/verify-email', { state: { email: result.email } });
     } else {
       setError(result.message);
       setIsSubmitting(false);
@@ -48,14 +49,17 @@ export default function Register() {
 
   return (
     <div className="w-full min-h-screen bg-[#404040] flex flex-col items-center justify-start pt-12 pb-20 px-4 select-none">
+      {/* Big Custom Brand Header Layer matching 1000000467.jpg */}
       <div className="mb-10 flex items-center justify-center">
-        <img 
-          src={logo} 
-          alt="AXT Logo" 
-          className="w-20 h-20 rounded-full object-contain shrink-0 drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]"
-        />
-      </div>
+  {/* Replace the img tag in BOTH Login.jsx and Register.jsx with this: */}
+<img 
+  src={logo} 
+  alt="AXT Logo" 
+  className="w-20 h-20 rounded-full object-contain shrink-0 drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]"
+/>
+</div>
 
+      {/* Solid Black Card Container with Sharp White Border Framing */}
       <div className="w-full max-w-sm bg-black border-[3px] border-white p-6 md:p-8 flex flex-col items-center">
         <h1 className="font-serif font-bold text-3xl md:text-4xl text-white mb-8 text-center tracking-wide">
           Signup
@@ -68,6 +72,7 @@ export default function Register() {
             </div>
           )}
 
+          {/* Full Name Input Container */}
           <div className="w-full bg-[#333333] h-12 rounded-full px-6 flex items-center border border-transparent focus-within:border-[#008BE5] transition-all">
             <input 
               type="text" 
@@ -79,6 +84,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Email Input Container */}
           <div className="w-full bg-[#333333] h-12 rounded-full px-4 flex items-center gap-3 border border-transparent focus-within:border-[#008BE5] transition-all">
             <User className="text-white shrink-0" size={22} fill="white" />
             <input 
@@ -91,6 +97,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Create Password Input Container */}
           <div className="w-full bg-[#333333] h-12 rounded-full px-4 flex items-center gap-3 border border-transparent focus-within:border-[#008BE5] transition-all relative">
             <Lock className="text-white shrink-0" size={22} />
             <input 
@@ -110,6 +117,7 @@ export default function Register() {
             </button>
           </div>
 
+          {/* Confirm Password Input Container */}
           <div className="w-full bg-[#333333] h-12 rounded-full px-6 flex items-center border border-transparent focus-within:border-[#008BE5] transition-all">
             <input 
               type="password" 
@@ -121,6 +129,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Electric Blue Action Accent Button */}
           <button 
             type="submit" 
             disabled={isSubmitting}
@@ -130,10 +139,12 @@ export default function Register() {
           </button>
         </form>
 
+        <GoogleSignInButton />
+
         <p className="mt-8 text-xs text-white font-sans tracking-wide">
           Already have an account? <Link to="/login" className="font-bold underline hover:text-[#008BE5] transition-colors ml-1">Login</Link>
         </p>
       </div>
     </div>
   );
-        }  
+}

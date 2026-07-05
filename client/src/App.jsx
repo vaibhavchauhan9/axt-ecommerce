@@ -19,6 +19,7 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 
 // Context State Architecture Layers
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -69,6 +70,7 @@ export default function App() {
                         <Route path="/product/:slug" element={<ProductDetails />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/verify-email" element={<VerifyEmail />} />
 
                         {/* Private Customer Operations Space */}
                         <Route path="/cart" element={

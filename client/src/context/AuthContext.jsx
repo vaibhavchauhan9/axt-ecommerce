@@ -47,13 +47,58 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data } = await apiClient.post('/auth/register', { name, email, password, phoneNumber });
+      // No token yet — the account is unverified until the OTP is confirmed.
+      return { success: true, email: data.data.email };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Registration sequence aborted.'
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyEmailOtp = async (email, otp) => {
+    setLoading(true);
+    try {
+      const { data } = await apiClient.post('/auth/verify-email', { email, otp });
       localStorage.setItem('axt_token', data.accessToken);
       setUser(data.data.user);
       return { success: true };
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Registration sequence aborted.'
+        message: error.response?.data?.message || 'OTP verification failed.'
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendVerificationOtp = async (email) => {
+    try {
+      const { data } = await apiClient.post('/auth/resend-verification-otp', { email });
+      return { success: true, message: data.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Could not resend the OTP right now.'
+      };
+    }
+  };
+
+  const googleAuth = async (credential) => {
+    setLoading(true);
+    try {
+      const { data } = await apiClient.post('/auth/google', { credential });
+      localStorage.setItem('axt_token', data.accessToken);
+      setUser(data.data.user);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Google sign-in failed.'
       };
     } finally {
       setLoading(false);
@@ -72,7 +117,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, logoutUser, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, verifyEmailOtp, resendVerificationOtp, googleAuth, logoutUser, isAdmin: user?.role === 'admin' }}>
       {children}
     </AuthContext.Provider>
   );

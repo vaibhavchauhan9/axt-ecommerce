@@ -5,65 +5,171 @@ import { generateTokens } from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
 import otpEmailTemplate from '../utils/otpEmailTemplate.js';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 
-// @desc    Register a new premium customer account footprint
-// @route   POST /api/v1/auth/register
-// @access  Public
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Helper function to generate 6-digit numeric OTP
+const generate6DigitOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// ==========================================
+// 1. REGISTER (With Email Verification OTP)
+// ==========================================
 export const register = asyncHandler(async (req, res, next) => {
   const { name, email, password, phoneNumber } = req.body;
 
-  // 1. Verify user does not already exist within database registry
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new AppError('An account with this email address already exists.', 400));
   }
 
-  // 2. Initialize the user profile document (Password is automatically hashed via Mongoose pre-save hook)
+  // Generate OTP and set expiry (e.g., 10 minutes)
+  const otp = generate6DigitOTP();
+  const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+  // Initialize user profile - isVerified explicit false, block login initially
   const newUser = await User.create({
     name,
     email,
     password,
     phoneNumber,
+    isVerified: false,
+    emailVerificationOTP: otp,
+    emailVerificationOTPExpires: otpExpiry
   });
 
-  // 3. Issue cryptographic tokens and establish HTTP-Only cookie parameters
-  const accessToken = generateTokens(res, newUser._id);
+  // Send Verification Email via Brevo system
+  try {
+    let emailHtml = '';
+    try {
+      emailHtml = otpEmailTemplate(newUser.name, otp);
+    } catch (tmplErr) {
+      emailHtml = `<h3>AXT Attitude X T-Shirts</h3><p>Hello ${newUser.name},</p><p>Your email verification OTP is: <b>${otp}</b></p><p>Valid for 10 minutes.</p>`;
+    }
 
-  // 4. Return complete profile data payload (excluding hashed password signature)
+    await sendEmail({
+      to: newUser.email,
+      subject: 'Verify Your AXT Account Email',
+      html: emailHtml,
+    });
+  } catch (emailErr) {
+    console.error('[Verification Email Error]:', emailErr.message);
+    // Profile created but email failed, user can try "Resend OTP" on the /verify-email page
+  }
+
   res.status(201).json({
     status: 'success',
-    accessToken,
-    data: {
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        phoneNumber: newUser.phoneNumber,
-      },
-    },
+    message: 'Registration successful! Please verify your email with the 6-digit OTP sent to you.',
+    email: newUser.email
   });
 });
 
-// @desc    Authenticate customer credentials and issue active tokens
-// @route   POST /api/v1/auth/login
-// @access  Public
+// ==========================================
+// 2. VERIFY EMAIL (OTP Submission)
+// ==========================================
+export const verifyEmail = asyncHandler(async (req, res, next) => {
+  const { email, otp } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new AppError('User account not found.', 404));
+  }
+
+  if (user.isVerified) {
+    return next(new AppError('Account is already verified. You can log in.', 400));
+  }
+
+  // Verify OTP matches and is not expired
+  if (user.emailVerificationOTP !== otp || new Date() > user.emailVerificationOTPExpires) {
+    return next(new AppError('Invalid or expired verification OTP. Please try again or resend.', 400));
+  }
+
+  // Update verification state and clear OTP fields
+  user.isVerified = true;
+  user.emailVerificationOTP = undefined;
+  user.emailVerificationOTPExpires = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  // Instantly issue login tokens on successful verification
+  const accessToken = generateTokens(res, user._id);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Email successfully verified! You are now logged in.',
+    accessToken,
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      }
+    }
+  });
+});
+
+// ==========================================
+// 3. RESEND VERIFICATION OTP
+// ==========================================
+export const resendVerificationOtp = asyncHandler(async (req, res, next) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new AppError('User account footprint not found.', 404));
+  }
+
+  if (user.isVerified) {
+    return next(new AppError('This account has already been verified.', 400));
+  }
+
+  const otp = generate6DigitOTP();
+  user.emailVerificationOTP = otp;
+  user.emailVerificationOTPExpires = new Date(Date.now() + 10 * 60 * 1000);
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    let emailHtml = `<h3>AXT Attitude X T-Shirts</h3><p>Hello ${user.name},</p><p>Your new verification OTP is: <b>${otp}</b></p><p>Valid for 10 minutes.</p>`;
+    try {
+      emailHtml = otpEmailTemplate(user.name, otp);
+    } catch (tmplErr) {}
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Your New AXT Verification OTP',
+      html: emailHtml,
+    });
+  } catch (emailErr) {
+    return next(new AppError('Failed to dispatch verification email. Try again later.', 500));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'A fresh 6-digit verification OTP has been sent to your email.'
+  });
+});
+
+// ==========================================
+// 4. LOGIN (Standard Credentials)
+// ==========================================
 export const login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
-  // 1. Explicitly fetch the document alongside the protected password verification field
-  const user = await User.findOne({ email }).select('+password +isActive');
+  const user = await User.findOne({ email }).select('+password +isActive +isVerified');
 
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('Invalid email credentials or password verification match.', 401));
   }
 
-  // 2. Verify account status before passing session tokens
   if (!user.isActive) {
     return next(new AppError('This user account footprint has been suspended.', 403));
   }
 
-  // 3. Issue fresh tokens and set secure HTTP-only cookie tracking structures
+  // BLOCK LOGIN IF NOT VERIFIED
+  if (!user.isVerified) {
+    return next(new AppError('Your email address is not verified yet. Please verify first.', 403));
+  }
+
   const accessToken = generateTokens(res, user._id);
 
   res.status(200).json({
@@ -80,9 +186,69 @@ export const login = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Rotate expired access tokens dynamically using the secure refresh cookie
-// @route   POST /api/v1/auth/refresh-token
-// @access  Public (Relies on verified HTTP-Only cookie presence)
+// ==========================================
+// 5. GOOGLE LOGIN HANDLER (Missing Link!)
+// ==========================================
+export const googleLogin = asyncHandler(async (req, res, next) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return next(new AppError('Google ID Token is required.', 400));
+  }
+
+  let ticket;
+  try {
+    ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+  } catch (err) {
+    return next(new AppError('Google token verification failed.', 400));
+  }
+
+  const payload = ticket.getPayload();
+  const { email, name, sub: googleId } = payload;
+
+  // Match existing user or create a new one
+  let user = await User.findOne({ email });
+
+  if (!user) {
+    // Automatically flag Google accounts as verified
+    user = await User.create({
+      name,
+      email,
+      isVerified: true, 
+      password: Math.random().toString(36).slice(-12), // Dummy secure password
+    });
+  } else if (!user.isVerified) {
+    // If user existed locally but wasn't verified, mark verified via trusted Google session
+    user.isVerified = true;
+    await user.save({ validateBeforeSave: false });
+  }
+
+  if (!user.isActive) {
+    return next(new AppError('This user account has been suspended.', 403));
+  }
+
+  const accessToken = generateTokens(res, user._id);
+
+  res.status(200).json({
+    status: 'success',
+    accessToken,
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    },
+  });
+});
+
+// ==========================================
+// 6. REFRESH ACCESS TOKEN
+// ==========================================
 export const refreshAccessToken = asyncHandler(async (req, res, next) => {
   const { refreshToken } = req.cookies;
 
@@ -90,16 +256,13 @@ export const refreshAccessToken = asyncHandler(async (req, res, next) => {
     return next(new AppError('Session expired. Missing valid refresh cookie credentials.', 401));
   }
 
-  // 1. Verify token signature against the dedicated refresh secret string
   const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
-  // 2. Verify user still exists in the database
   const user = await User.findById(decoded.id);
   if (!user) {
     return next(new AppError('The session owner could not be located.', 401));
   }
 
-  // 3. Re-issue fresh token parameters and rotate authorization context strings
   const newAccessToken = generateTokens(res, user._id);
 
   res.status(200).json({
@@ -108,13 +271,13 @@ export const refreshAccessToken = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Terminate session context state and clear dynamic tracking cookies
-// @route   POST /api/v1/auth/logout
-// @access  Private
-export const logout = asyncHandler(async (req, res, net) => {
+// ==========================================
+// 7. LOGOUT
+// ==========================================
+export const logout = asyncHandler(async (req, res, next) => {
   res.cookie('refreshToken', 'loggedout', {
     httpOnly: true,
-    expires: new Date(Date.now() + 10 * 1000), // Invalidate within ten seconds
+    expires: new Date(Date.now() + 10 * 1000),
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
   });
@@ -125,12 +288,11 @@ export const logout = asyncHandler(async (req, res, net) => {
   });
 });
 
-// @desc    Generate a 6-digit OTP and email it to the account's registered address
-// @route   POST /api/v1/auth/forgot-password
-// @access  Public
+// ==========================================
+// 8. FORGOT PASSWORD (OTP)
+// ==========================================
 export const forgotPassword = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
-
   const user = await User.findOne({ email });
 
   const genericResponse = {
@@ -146,7 +308,6 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   try {
-    // 🟢 SAFE COMPATIBILITY LAYER: Agar template engine fail ho toh continuous text content jaye
     let emailHtml = '';
     try {
       emailHtml = otpEmailTemplate(user.name, otp);
@@ -159,9 +320,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
       subject: 'Your AXT Password Reset OTP',
       html: emailHtml,
     });
-
   } catch (emailErr) {
-    // Sending failed — roll back the OTP fields
     user.passwordResetOTP = undefined;
     user.passwordResetOTPExpires = undefined;
     await user.save({ validateBeforeSave: false });
@@ -173,10 +332,9 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json(genericResponse);
 });
 
-
-// @desc    Verify a submitted OTP is correct and unexpired (does not consume it)
-// @route   POST /api/v1/auth/verify-reset-otp
-// @access  Public
+// ==========================================
+// 9. VERIFY RESET OTP
+// ==========================================
 export const verifyResetOtp = asyncHandler(async (req, res, next) => {
   const { email, otp } = req.body;
 
@@ -192,9 +350,9 @@ export const verifyResetOtp = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Verify the OTP one final time and commit the new password
-// @route   POST /api/v1/auth/reset-password
-// @access  Public
+// ==========================================
+// 10. RESET PASSWORD
+// ==========================================
 export const resetPassword = asyncHandler(async (req, res, next) => {
   const { email, otp, newPassword } = req.body;
 
@@ -204,8 +362,6 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
     return next(new AppError('This OTP is invalid or has expired. Please request a new one.', 400));
   }
 
-  // Assign the new password — the pre-save hook hashes it and stamps passwordChangedAt,
-  // which automatically invalidates any JWTs issued before this moment.
   user.password = newPassword;
   user.passwordResetOTP = undefined;
   user.passwordResetOTPExpires = undefined;

@@ -26,6 +26,14 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [salesReport, setSalesReport] = useState([]);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [trackingForm, setTrackingForm] = useState({
+    trackingNumber: '',
+    courierName: '',
+    courierPhone: '',
+    courierTrackingUrl: '',
+    estimatedDeliveryDate: '',
+  });
+  const [trackingSaving, setTrackingSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Product management state
@@ -76,15 +84,41 @@ export default function AdminDashboard() {
     setCategories(data.data.categories);
   };
 
-  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+  const handleUpdateOrderStatus = async (orderId, newStatus, extra = {}) => {
     try {
-      await apiClient.patch(`/orders/${orderId}/status`, { orderStatus: newStatus });
-      alert(`Order ${orderId} shifted to ${newStatus}`);
+      await apiClient.patch(`/orders/${orderId}/status`, { orderStatus: newStatus, ...extra });
       // Refresh the orders list
       const { data } = await apiClient.get('/admin/sales-report');
       setSalesReport(data.data.reports);
     } catch (error) {
-      alert('Failed to update logistics status.');
+      alert(error.response?.data?.message || 'Failed to update logistics status.');
+    }
+  };
+
+  // Opens the shipment-details row and preloads any tracking info already on the order
+  const toggleExpandedOrder = (order) => {
+    if (expandedOrderId === order._id) {
+      setExpandedOrderId(null);
+      return;
+    }
+    setExpandedOrderId(order._id);
+    setTrackingForm({
+      trackingNumber: order.tracking?.trackingNumber || '',
+      courierName: order.tracking?.courierName || '',
+      courierPhone: order.tracking?.courierPhone || '',
+      courierTrackingUrl: order.tracking?.courierTrackingUrl || '',
+      estimatedDeliveryDate: order.tracking?.estimatedDeliveryDate
+        ? order.tracking.estimatedDeliveryDate.substring(0, 10)
+        : '',
+    });
+  };
+
+  const handleSaveTracking = async (order) => {
+    setTrackingSaving(true);
+    try {
+      await handleUpdateOrderStatus(order._id, order.orderStatus, trackingForm);
+    } finally {
+      setTrackingSaving(false);
     }
   };
 
@@ -682,7 +716,7 @@ export default function AdminDashboard() {
                     {salesReport.map(order => (
                       <React.Fragment key={order._id}>
                         <tr
-                          onClick={() => setExpandedOrderId(expandedOrderId === order._id ? null : order._id)}
+                          onClick={() => toggleExpandedOrder(order)}
                           className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
                         >
                           <td className="p-4 text-xs font-mono text-neutral-400">{order._id.substring(0, 8)}...</td>
@@ -695,8 +729,8 @@ export default function AdminDashboard() {
                           </td>
                           <td className="p-4 text-xs font-bold text-brand-accentNeon">₹{order.totalPrice.toFixed(2)}</td>
                           <td className="p-4">
-                            <span className={`px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase ${order.orderStatus === 'DELIVERED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                              {order.orderStatus}
+                            <span className={`px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase ${order.orderStatus === 'DELIVERED' ? 'bg-emerald-500/10 text-emerald-400' : order.orderStatus === 'CANCELLED' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                              {order.orderStatus.replace(/_/g, ' ')}
                             </span>
                           </td>
                           <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
@@ -706,8 +740,11 @@ export default function AdminDashboard() {
                               className="bg-neutral-900 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-white rounded px-2 py-1 focus:outline-none focus:border-brand-accentNeon cursor-pointer"
                             >
                               <option value="PENDING">PENDING</option>
+                              <option value="CONFIRMED">CONFIRMED</option>
                               <option value="PACKED">PACKED</option>
+                              <option value="READY_TO_SHIP">READY TO SHIP</option>
                               <option value="SHIPPED">SHIPPED</option>
+                              <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>
                               <option value="DELIVERED">DELIVERED</option>
                               <option value="CANCELLED">CANCELLED</option>
                             </select>
@@ -749,6 +786,72 @@ export default function AdminDashboard() {
                                   )}
                                 </div>
                               </div>
+
+                              {/* Shipment / Courier Management */}
+                              {!['DELIVERED', 'CANCELLED'].includes(order.orderStatus) && (
+                                <div className="mt-6 pt-6 border-t border-white/5">
+                                  <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-3">Shipment & Tracking Details</p>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <input
+                                      type="text"
+                                      placeholder="Tracking Number"
+                                      value={trackingForm.trackingNumber}
+                                      onChange={(e) => setTrackingForm({ ...trackingForm, trackingNumber: e.target.value })}
+                                      className={inputClass}
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="Courier Name (e.g. Delhivery)"
+                                      value={trackingForm.courierName}
+                                      onChange={(e) => setTrackingForm({ ...trackingForm, courierName: e.target.value })}
+                                      className={inputClass}
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="Courier Phone"
+                                      value={trackingForm.courierPhone}
+                                      onChange={(e) => setTrackingForm({ ...trackingForm, courierPhone: e.target.value })}
+                                      className={inputClass}
+                                    />
+                                    <input
+                                      type="url"
+                                      placeholder="Courier Tracking URL"
+                                      value={trackingForm.courierTrackingUrl}
+                                      onChange={(e) => setTrackingForm({ ...trackingForm, courierTrackingUrl: e.target.value })}
+                                      className={inputClass}
+                                    />
+                                    <input
+                                      type="date"
+                                      value={trackingForm.estimatedDeliveryDate}
+                                      onChange={(e) => setTrackingForm({ ...trackingForm, estimatedDeliveryDate: e.target.value })}
+                                      className={inputClass}
+                                    />
+                                    <button
+                                      type="button"
+                                      disabled={trackingSaving}
+                                      onClick={() => handleSaveTracking(order)}
+                                      className="bg-brand-accentNeon text-black text-[10px] font-black uppercase tracking-widest rounded-lg px-4 py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
+                                    >
+                                      {trackingSaving ? 'Saving…' : 'Save Tracking Info'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Status History Log */}
+                              {order.statusHistory?.length > 0 && (
+                                <div className="mt-6 pt-6 border-t border-white/5">
+                                  <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-3">Status History</p>
+                                  <div className="flex flex-col gap-1.5">
+                                    {order.statusHistory.map((h, idx) => (
+                                      <div key={idx} className="flex justify-between text-[11px] text-neutral-400">
+                                        <span className="font-bold text-neutral-300 uppercase tracking-wider">{h.status.replace(/_/g, ' ')}</span>
+                                        <span>{new Date(h.updatedAt).toLocaleString()}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </td>
                           </tr>
                         )}

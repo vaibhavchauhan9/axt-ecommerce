@@ -172,8 +172,8 @@ export default function Profile() {
                       <div>
                         <p className="text-[10px] text-neutral-500 font-mono tracking-widest mb-1">ID: {order._id}</p>
                         <p className="text-sm font-bold text-white mb-2">Total: ₹{order.totalPrice.toFixed(2)}</p>
-                        <span className={`px-2 py-1 rounded text-[10px] font-black tracking-widest uppercase ${order.orderStatus === 'DELIVERED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                          {order.orderStatus}
+                        <span className={`px-2 py-1 rounded text-[10px] font-black tracking-widest uppercase ${order.orderStatus === 'DELIVERED' ? 'bg-emerald-500/10 text-emerald-400' : order.orderStatus === 'CANCELLED' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                          {order.orderStatus.replace(/_/g, ' ')}
                         </span>
                       </div>
                       <div className="text-right w-full md:w-auto text-xs text-neutral-400">

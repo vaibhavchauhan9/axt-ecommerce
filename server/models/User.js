@@ -43,9 +43,11 @@ const userSchema = new mongoose.Schema(
       {
         street: { type: String, required: true },
         city: { type: String, required: true },
-        state: { type: String, required: true },
+        // Permanently fixed — the business currently only ships within Uttar Pradesh, India.
+        // Enforced again in userController so a direct API call can't override it either.
+        state: { type: String, required: true, enum: ['Uttar Pradesh'], default: 'Uttar Pradesh' },
+        country: { type: String, required: true, enum: ['India'], default: 'India' },
         postalCode: { type: String, required: true },
-        country: { type: String, required: true },
         isDefault: { type: Boolean, default: false },
       },
     ],

@@ -92,18 +92,37 @@ export default function AddressAutocomplete({ onResolved, onError }) {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
+          console.log('[AddressAutocomplete] Got coordinates:', latitude, longitude, 'accuracy(m):', position.coords.accuracy);
           const result = await reverseGeocode(latitude, longitude);
+          console.log('[AddressAutocomplete] Reverse geocode result:', result);
+
+          if (!result.city && !result.street && !result.postalCode) {
+            onError?.('Your location was detected, but no address details came back for this exact spot. Please search or enter it manually.');
+            return;
+          }
+          if (!result.street) {
+            onError?.('Got your area, but not the exact street — please fill in the street address manually.');
+          }
+
           acceptResult(result);
         } catch (err) {
+          console.error('[AddressAutocomplete] Reverse geocode failed:', err);
           onError?.(err.message);
         } finally {
           setLocating(false);
         }
       },
-      () => {
+      (geoError) => {
+        console.error('[AddressAutocomplete] Geolocation failed:', geoError);
         setLocating(false);
-        onError?.('Location permission denied. Please search or enter your address manually.');
-      }
+        const messages = {
+          1: 'Location permission denied. Please allow location access and try again.',
+          2: 'Your location could not be determined. Please search or enter your address manually.',
+          3: 'Location request timed out. Please try again or enter your address manually.',
+        };
+        onError?.(messages[geoError.code] || 'Location permission denied. Please search or enter your address manually.');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 

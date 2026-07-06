@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Truck, ShieldCheck, ArrowRight, Wallet } from 'lucide-react';
+import { CreditCard, Truck, ShieldCheck, ArrowRight, Wallet, Tag, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 
 export default function Checkout() {
-  const { cart, cartTotalAmount, fetchCartState } = useCart();
+  const { cart, activeItems, cartTotalAmount, discountAmount, applyCoupon, removeCoupon, couponLoading, fetchCartState } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -19,27 +19,37 @@ export default function Checkout() {
   });
   const [paymentMethod, setPaymentMethod] = useState('STRIPE');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [summary, setSummary] = useState({ subtotal: 0, tax: 0, shipping: 0, total: 0 });
+  const [summary, setSummary] = useState({ subtotal: 0, discount: 0, tax: 0, shipping: 0, total: 0 });
+  const [couponInput, setCouponInput] = useState('');
 
-  // Compute final costs based on cart
+  // Compute final costs based on cart (subtotal, coupon discount, shipping, tax)
   useEffect(() => {
-    if (cart.items?.length > 0) {
+    if (activeItems.length > 0) {
       const sub = cartTotalAmount;
-      const ship = sub > 100 ? 0 : 15;
-      const taxAmount = sub * 0.18;
+      const discountedSub = Math.max(sub - discountAmount, 0);
+      const ship = discountedSub > 100 ? 0 : 15;
+      const taxAmount = discountedSub * 0.18;
       setSummary({
         subtotal: sub,
+        discount: discountAmount,
         shipping: ship,
         tax: taxAmount,
-        total: sub + ship + taxAmount,
+        total: discountedSub + ship + taxAmount,
       });
     } else {
       navigate('/shop');
     }
-  }, [cart, cartTotalAmount, navigate]);
+  }, [activeItems, cartTotalAmount, discountAmount, navigate]);
 
   const handleInputChange = (e) => {
     setShippingAddress({ ...shippingAddress, [e.target.name]: e.target.value });
+  };
+
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+    const result = await applyCoupon(couponInput.trim());
+    if (result.success) setCouponInput('');
   };
 
   const handlePlaceOrder = async (e) => {
@@ -48,6 +58,8 @@ export default function Checkout() {
 
     try {
       // 1. Create the base order in the database
+      // (the server re-validates any applied coupon and recomputes the discount — the
+      // client-side "summary" above is just a preview, not the source of truth)
       const { data: orderData } = await apiClient.post('/orders', {
         shippingAddress,
         paymentMethod,
@@ -161,7 +173,7 @@ export default function Checkout() {
               <h2 className="text-sm font-display font-bold uppercase tracking-wider mb-6">Order Matrix</h2>
               
               <div className="flex flex-col gap-4 mb-6 max-h-64 overflow-y-auto pr-2">
-                {cart.items?.map((item) => (
+                {activeItems.map((item) => (
                   <div key={item._id} className="flex gap-4 items-center">
                     <img src={item.product?.images?.[0]} alt="Pic" className="w-12 h-16 object-cover rounded-md border border-white/10" />
                     <div className="flex-1">
@@ -173,8 +185,44 @@ export default function Checkout() {
                 ))}
               </div>
 
+              {/* Coupon Box */}
+              <div className="mb-6">
+                {cart.coupon?.code ? (
+                  <div className="flex items-center justify-between bg-white/5 border border-brand-accentNeon/30 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Tag size={14} className="text-brand-accentNeon" />
+                      <span className="font-bold text-white">{cart.coupon.code}</span>
+                      <span className="text-neutral-400">applied</span>
+                    </div>
+                    <button onClick={removeCoupon} className="text-neutral-400 hover:text-red-400" type="button">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      placeholder="Have a coupon code?"
+                      className="flex-1 bg-neutral-900/50 border border-white/10 rounded-lg py-3 px-4 text-xs uppercase tracking-wide text-white placeholder-neutral-500 focus:outline-none focus:border-brand-accentNeon"
+                    />
+                    <button
+                      type="submit"
+                      disabled={couponLoading || !couponInput.trim()}
+                      className="px-4 text-[11px] font-bold uppercase tracking-widest bg-white/10 hover:bg-brand-accentNeon hover:text-black rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      Apply
+                    </button>
+                  </form>
+                )}
+              </div>
+
               <div className="border-t border-white/10 pt-4 flex flex-col gap-3 text-xs text-neutral-400 mb-6">
                 <div className="flex justify-between"><span>Subtotal</span><span className="text-white">₹{summary.subtotal.toFixed(2)}</span></div>
+                {summary.discount > 0 && (
+                  <div className="flex justify-between text-brand-accentNeon"><span>Coupon Discount</span><span>−₹{summary.discount.toFixed(2)}</span></div>
+                )}
                 <div className="flex justify-between"><span>Shipping</span><span className="text-white">{summary.shipping === 0 ? 'FREE' : `₹${summary.shipping.toFixed(2)}`}</span></div>
                 <div className="flex justify-between"><span>Taxes (18%)</span><span className="text-white">₹{summary.tax.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center border-t border-white/5 pt-3 mt-1">

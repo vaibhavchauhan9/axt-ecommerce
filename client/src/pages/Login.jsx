@@ -13,6 +13,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   
   const { loginUser, user } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function Login() {
     setError('');
     setIsSubmitting(true);
 
-    const result = await loginUser(email, password);
+    const result = await loginUser(email, password, rememberMe);
     
     if (result.success) {
       const origin = location.state?.from?.pathname || '/';
@@ -100,6 +101,8 @@ export default function Login() {
               <input 
                 type="checkbox" 
                 id="rememberMe" 
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 bg-transparent border-2 border-white checked:bg-[#008BE5] focus:ring-0 cursor-pointer accent-[#008BE5]"
               />
               <label htmlFor="rememberMe" className="text-xs text-white font-sans cursor-pointer font-medium">

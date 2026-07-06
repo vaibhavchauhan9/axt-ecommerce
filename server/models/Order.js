@@ -25,9 +25,10 @@ const orderSchema = new mongoose.Schema(
     shippingAddress: {
       street: { type: String, required: true },
       city: { type: String, required: true },
-      state: { type: String, required: true },
+      // Permanently fixed — see userController/orderController for the server-side enforcement.
+      state: { type: String, required: true, enum: ['Uttar Pradesh'], default: 'Uttar Pradesh' },
       postalCode: { type: String, required: true },
-      country: { type: String, required: true },
+      country: { type: String, required: true, enum: ['India'], default: 'India' },
     },
     paymentMethod: {
       type: String,

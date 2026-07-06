@@ -49,6 +49,28 @@ const userSchema = new mongoose.Schema(
         isDefault: { type: Boolean, default: false },
       },
     ],
+    // NEW: Saved payment methods — ONLY masked/display data is ever stored here.
+    // Full card numbers and CVVs are never persisted; a real integration would
+    // send the raw card details straight to Stripe/Razorpay and store only the
+    // token + these display fields that come back from the processor.
+    savedCards: [
+      {
+        cardHolderName: { type: String, required: true, trim: true },
+        brand: {
+          type: String,
+          enum: ['Visa', 'Mastercard', 'Amex', 'RuPay', 'Other'],
+          default: 'Other',
+        },
+        last4: {
+          type: String,
+          required: true,
+          match: [/^\d{4}$/, 'last4 must be exactly 4 digits.'],
+        },
+        expiryMonth: { type: Number, required: true, min: 1, max: 12 },
+        expiryYear: { type: Number, required: true },
+        isDefault: { type: Boolean, default: false },
+      },
+    ],
     refreshToken: {
       type: String,
       select: false,

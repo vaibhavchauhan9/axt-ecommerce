@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, ShoppingBag, AlertTriangle, TrendingUp, IndianRupee, Package, Plus, Trash2, Pencil, X, Users, Tag, Bell } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, AlertTriangle, TrendingUp, IndianRupee, Package, Plus, Trash2, Pencil, X, Users, Tag, Bell, RotateCcw } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import CustomerManagement from '../components/admin/CustomerManagement';
 import CouponManagement from '../components/admin/CouponManagement';
 import NotificationBroadcast from '../components/admin/NotificationBroadcast';
+import ReturnManagement from '../components/admin/ReturnManagement';
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -323,6 +324,12 @@ export default function AdminDashboard() {
               className={`flex items-center gap-3 w-full p-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'notifications' ? 'bg-white text-black' : 'bg-neutral-900/40 border border-white/5 text-neutral-400 hover:bg-neutral-900 hover:text-white'}`}
             >
               <Bell size={16} /> Notifications
+            </button>
+            <button 
+              onClick={() => setActiveTab('returns')}
+              className={`flex items-center gap-3 w-full p-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'returns' ? 'bg-white text-black' : 'bg-neutral-900/40 border border-white/5 text-neutral-400 hover:bg-neutral-900 hover:text-white'}`}
+            >
+              <RotateCcw size={16} /> Returns
             </button>
           </nav>
         </aside>
@@ -871,6 +878,8 @@ export default function AdminDashboard() {
 
           {/* TAB 6: Send Notifications */}
           {activeTab === 'notifications' && <NotificationBroadcast />}
+
+          {activeTab === 'returns' && <ReturnManagement />}
 
         </main>
       </div>

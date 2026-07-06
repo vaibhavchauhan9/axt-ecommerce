@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Truck, ShieldCheck, ArrowRight, Wallet, Tag, X } from 'lucide-react';
+import { CreditCard, Truck, ShieldCheck, ArrowRight, Wallet, Tag, X, Lock } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
+import AddressAutocomplete from '../components/common/AddressAutocomplete';
+
+const FIXED_STATE = 'Uttar Pradesh';
+const FIXED_COUNTRY = 'India';
 
 export default function Checkout() {
   const { cart, activeItems, cartTotalAmount, discountAmount, applyCoupon, removeCoupon, couponLoading, fetchCartState } = useCart();
@@ -13,14 +17,15 @@ export default function Checkout() {
   const [shippingAddress, setShippingAddress] = useState({
     street: '',
     city: '',
-    state: '',
+    state: FIXED_STATE,
     postalCode: '',
-    country: 'United States',
+    country: FIXED_COUNTRY,
   });
   const [paymentMethod, setPaymentMethod] = useState('STRIPE');
   const [isProcessing, setIsProcessing] = useState(false);
   const [summary, setSummary] = useState({ subtotal: 0, discount: 0, tax: 0, shipping: 0, total: 0 });
   const [couponInput, setCouponInput] = useState('');
+  const [mapNotice, setMapNotice] = useState('');
 
   // Compute final costs based on cart (subtotal, coupon discount, shipping, tax)
   useEffect(() => {
@@ -45,6 +50,17 @@ export default function Checkout() {
     setShippingAddress({ ...shippingAddress, [e.target.name]: e.target.value });
   };
 
+  const handleAddressResolved = ({ street, city, postalCode }) => {
+    setShippingAddress((prev) => ({
+      ...prev,
+      street: street || prev.street,
+      city: city || prev.city,
+      postalCode: postalCode || prev.postalCode,
+      // state/country are never touched here — they're permanently fixed below
+    }));
+    setMapNotice('');
+  };
+
   const handleApplyCoupon = async (e) => {
     e.preventDefault();
     if (!couponInput.trim()) return;
@@ -58,10 +74,10 @@ export default function Checkout() {
 
     try {
       // 1. Create the base order in the database
-      // (the server re-validates any applied coupon and recomputes the discount — the
-      // client-side "summary" above is just a preview, not the source of truth)
+      // (the server enforces state=Uttar Pradesh / country=India and re-validates any
+      // applied coupon — the client-side "summary" above is just a preview)
       const { data: orderData } = await apiClient.post('/orders', {
-        shippingAddress,
+        shippingAddress: { ...shippingAddress, state: FIXED_STATE, country: FIXED_COUNTRY },
         paymentMethod,
       });
       const orderId = orderData.data.order._id;
@@ -101,11 +117,20 @@ export default function Checkout() {
             
             {/* Logistics Form */}
             <div className="glass-card p-6 md:p-8 border border-white/5">
-              <h2 className="text-sm font-display font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
+              <h2 className="text-sm font-display font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Truck size={18} className="text-brand-accentNeon" /> Shipping Coordinates
               </h2>
+              <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-6">
+                We currently deliver only within Uttar Pradesh, India.
+              </p>
+
+              {/* Google Maps search + current-location fetch */}
+              <AddressAutocomplete onResolved={handleAddressResolved} onError={setMapNotice} />
+              {mapNotice && (
+                <p className="text-[11px] text-amber-400 mb-3">{mapNotice}</p>
+              )}
               
-              <form className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <form className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
                 <div className="md:col-span-2">
                   <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest block mb-2">Street Address</label>
                   <input type="text" name="street" required value={shippingAddress.street} onChange={handleInputChange} className="w-full bg-neutral-900/50 border border-white/10 rounded-lg py-3 px-4 focus:outline-none focus:border-brand-accentNeon" />
@@ -115,16 +140,20 @@ export default function Checkout() {
                   <input type="text" name="city" required value={shippingAddress.city} onChange={handleInputChange} className="w-full bg-neutral-900/50 border border-white/10 rounded-lg py-3 px-4 focus:outline-none focus:border-brand-accentNeon" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest block mb-2">State / Province</label>
-                  <input type="text" name="state" required value={shippingAddress.state} onChange={handleInputChange} className="w-full bg-neutral-900/50 border border-white/10 rounded-lg py-3 px-4 focus:outline-none focus:border-brand-accentNeon" />
+                  <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest flex items-center gap-1.5 mb-2">
+                    State <Lock size={10} />
+                  </label>
+                  <input type="text" disabled value={FIXED_STATE} className="w-full bg-neutral-900/80 border border-white/5 text-neutral-400 rounded-lg py-3 px-4 cursor-not-allowed" />
                 </div>
                 <div>
                   <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest block mb-2">Postal Code</label>
                   <input type="text" name="postalCode" required value={shippingAddress.postalCode} onChange={handleInputChange} className="w-full bg-neutral-900/50 border border-white/10 rounded-lg py-3 px-4 focus:outline-none focus:border-brand-accentNeon" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest block mb-2">Country</label>
-                  <input type="text" name="country" required value={shippingAddress.country} onChange={handleInputChange} className="w-full bg-neutral-900/50 border border-white/10 rounded-lg py-3 px-4 focus:outline-none focus:border-brand-accentNeon" />
+                  <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest flex items-center gap-1.5 mb-2">
+                    Country <Lock size={10} />
+                  </label>
+                  <input type="text" disabled value={FIXED_COUNTRY} className="w-full bg-neutral-900/80 border border-white/5 text-neutral-400 rounded-lg py-3 px-4 cursor-not-allowed" />
                 </div>
               </form>
             </div>

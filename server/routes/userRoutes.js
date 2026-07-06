@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getMe,
   updateMe,
+  deleteMe,
   addAddress,
   getAddresses,
   updateAddress,
@@ -23,6 +24,7 @@ router.use(protect);
 
 router.get('/me', getMe);
 router.patch('/update-me', updateMe);
+router.delete('/delete-me', deleteMe);
 router.get('/address', getAddresses);
 router.post('/address', addAddress);
 router.patch('/address/:addressId', updateAddress);

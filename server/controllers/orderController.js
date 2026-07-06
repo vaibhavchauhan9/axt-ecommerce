@@ -12,6 +12,14 @@ import { createNotification } from './notificationController.js';
 export const createOrder = asyncHandler(async (req, res, next) => {
   const { shippingAddress, paymentMethod } = req.body;
 
+  // State & country are permanently fixed to the current delivery zone — never
+  // trusted from the client, so a direct API call can't route an order elsewhere.
+  const lockedShippingAddress = {
+    ...shippingAddress,
+    state: 'Uttar Pradesh',
+    country: 'India',
+  };
+
   // 1. Retrieve current user session cart array
   const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
   if (!cart || cart.items.length === 0) {
@@ -80,7 +88,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
   const order = await Order.create({
     user: req.user._id,
     items: orderItems,
-    shippingAddress,
+    shippingAddress: lockedShippingAddress,
     paymentMethod,
     itemsPrice,
     coupon: { code: appliedCouponCode, discountAmount },

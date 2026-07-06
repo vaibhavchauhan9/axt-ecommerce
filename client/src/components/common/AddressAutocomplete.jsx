@@ -1,18 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, Loader2 } from 'lucide-react';
-import { searchAddress, reverseGeocode, parseNominatimAddress, lookupPincode } from '../../utils/geocoding';
-
-const ALLOWED_STATE = 'Uttar Pradesh';
-const ALLOWED_COUNTRY = 'India';
+import { searchAddress, reverseGeocode, isAllowedState, ALLOWED_STATE } from '../../utils/addressLookup';
 
 /**
  * FREE address lookup — no API key, no billing. Uses OpenStreetMap Nominatim for
- * search + "Use my location", and India Post's Pincode API as a bonus quick-fill.
+ * search + "Use my location" (see ../../utils/addressLookup.js).
  *
  * On a successful pick, calls onResolved({ street, city, postalCode }) — country and
  * state are intentionally NOT passed back, since those two fields are permanently
- * fixed elsewhere in the form. Picks outside Uttar Pradesh, India are rejected via
- * onError instead of silently mismatching the fixed fields.
+ * fixed elsewhere in the form. Picks outside Uttar Pradesh are rejected via onError.
  */
 export default function AddressAutocomplete({ onResolved, onError }) {
   const [query, setQuery] = useState('');
@@ -23,8 +19,8 @@ export default function AddressAutocomplete({ onResolved, onError }) {
   const debounceRef = useRef(null);
   const wrapperRef = useRef(null);
 
-  // Debounced live search as the user types (Nominatim asks for ~1 req/sec, so we
-  // wait 600ms of silence before firing)
+  // Debounced live search as the user types (Nominatim's fair-use policy asks for
+  // ~1 req/sec, so we wait 600ms of silence before firing)
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -61,26 +57,25 @@ export default function AddressAutocomplete({ onResolved, onError }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const acceptParsedAddress = (parsed) => {
-    if (parsed.country && parsed.country !== ALLOWED_COUNTRY) {
+  const acceptResult = (result) => {
+    if (result.country && result.country !== 'India') {
       onError?.('We currently only deliver within India. Please choose an address in India.');
       return;
     }
-    if (parsed.state && parsed.state !== ALLOWED_STATE) {
+    if (result.state && !isAllowedState(result.state)) {
       onError?.(`We currently only deliver within ${ALLOWED_STATE}. Please choose an address in ${ALLOWED_STATE}.`);
       return;
     }
 
     onResolved?.({
-      street: parsed.street,
-      city: parsed.city,
-      postalCode: parsed.postalCode,
+      street: result.street,
+      city: result.city,
+      postalCode: result.postalCode,
     });
   };
 
   const handleSelectResult = (result) => {
-    const parsed = parseNominatimAddress(result.address);
-    acceptParsedAddress(parsed);
+    acceptResult(result);
     setQuery('');
     setResults([]);
     setShowDropdown(false);
@@ -98,8 +93,7 @@ export default function AddressAutocomplete({ onResolved, onError }) {
         try {
           const { latitude, longitude } = position.coords;
           const result = await reverseGeocode(latitude, longitude);
-          const parsed = parseNominatimAddress(result.address);
-          acceptParsedAddress(parsed);
+          acceptResult(result);
         } catch (err) {
           onError?.(err.message);
         } finally {
@@ -131,16 +125,17 @@ export default function AddressAutocomplete({ onResolved, onError }) {
 
         {showDropdown && results.length > 0 && (
           <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-neutral-900 border border-white/10 rounded-lg overflow-hidden shadow-xl max-h-56 overflow-y-auto">
-            {results.map((result) => (
+            {results.map((result, idx) => (
               <button
-                key={result.place_id}
+                key={idx}
                 type="button"
                 onClick={() => handleSelectResult(result)}
                 className="w-full text-left px-4 py-3 text-xs text-neutral-300 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
               >
-                {result.display_name}
+                {result.label}
               </button>
             ))}
+            <p className="px-4 py-1.5 text-[9px] text-neutral-600 bg-black/30">© OpenStreetMap contributors</p>
           </div>
         )}
       </div>
@@ -156,7 +151,3 @@ export default function AddressAutocomplete({ onResolved, onError }) {
     </div>
   );
 }
-
-// Exported so forms can offer a plain "enter PIN code to auto-fill city/state" field
-// too, using the free India Post API — see AddressBook.jsx for an example.
-export { lookupPincode };

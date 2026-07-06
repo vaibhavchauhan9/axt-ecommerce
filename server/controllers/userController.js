@@ -360,3 +360,33 @@ export const updatePassword = asyncHandler(async (req, res, next) => {
     message: 'Account password successfully updated.',
   });
 });
+
+// @desc    Customer deactivates (soft-deletes) their own account
+// @route   DELETE /api/v1/users/delete-me
+// @access  Private
+// Body: { password } — required so a hijacked-but-logged-in session can't nuke
+// the account without re-proving the actual password.
+export const deleteMe = asyncHandler(async (req, res, next) => {
+  const { password } = req.body;
+
+  const user = await User.findById(req.user._id).select('+password');
+
+  // Google-only accounts have no password to check — skip that verification for them.
+  if (user.password) {
+    if (!password || !(await user.correctPassword(password, user.password))) {
+      return next(new AppError('Please confirm your current password to delete your account.', 401));
+    }
+  }
+
+  // Soft-delete: flip isActive off rather than hard-deleting, so order history,
+  // reviews, and admin records referencing this user stay intact. The login
+  // controller already blocks any account with isActive: false.
+  user.isActive = false;
+  await user.save({ validateBeforeSave: false });
+
+  res.clearCookie('refreshToken');
+  res.status(200).json({
+    status: 'success',
+    message: 'Your account has been deactivated.',
+  });
+});

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Truck, RotateCcw, ShieldCheck, ShoppingCart, Star, Heart } from 'lucide-react';
+import { Truck, RotateCcw, ShieldCheck, ShoppingCart, Star, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -18,6 +18,8 @@ export default function ProductDetails() {
   const [activeImage, setActiveImage] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [adding, setAdding] = useState(false);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -54,6 +56,34 @@ export default function ProductDetails() {
       return;
     }
     toggleWishlistItem(product._id);
+  };
+
+  // --- Image gallery swipe navigation ---
+  const goToImage = (direction) => {
+    if (!product?.images?.length) return;
+    const currentIndex = product.images.indexOf(activeImage);
+    const total = product.images.length;
+    const nextIndex = (currentIndex + direction + total) % total; // wraps around both ends
+    setActiveImage(product.images[nextIndex]);
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const distance = touchStartX.current - touchEndX.current;
+    const SWIPE_THRESHOLD = 50; // pixels — avoids triggering on accidental taps
+    if (Math.abs(distance) > SWIPE_THRESHOLD) {
+      if (distance > 0) goToImage(1); // swiped left -> next image
+      else goToImage(-1); // swiped right -> previous image
+    }
+    touchStartX.current = 0;
+    touchEndX.current = 0;
   };
 
   if (loading) {
@@ -95,16 +125,57 @@ export default function ProductDetails() {
           </div>
 
           {/* Main Active Image Window */}
-          <div className="flex-1 w-full aspect-[3/4] bg-neutral-900 rounded-2xl overflow-hidden border border-white/5 relative">
+          <div
+            className="flex-1 w-full aspect-[3/4] bg-neutral-900 rounded-2xl overflow-hidden border border-white/5 relative touch-pan-y select-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             <img 
               src={activeImage} 
               alt={product.name} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover pointer-events-none"
+              draggable={false}
             />
             {product.discountPrice && (
               <span className="absolute top-4 left-4 bg-brand-accentNeon text-black font-black text-[10px] px-3 py-1.5 rounded uppercase tracking-widest">
                 SALE
               </span>
+            )}
+
+            {product.images?.length > 1 && (
+              <>
+                {/* Left/Right arrows — always usable on desktop (hover), tappable on mobile too */}
+                <button
+                  type="button"
+                  onClick={() => goToImage(-1)}
+                  aria-label="Previous image"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goToImage(1)}
+                  aria-label="Next image"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-colors"
+                >
+                  <ChevronRight size={20} />
+                </button>
+
+                {/* Dot indicators */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {product.images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImage(img)}
+                      aria-label={`Go to image ${idx + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${activeImage === img ? 'w-5 bg-brand-accentNeon' : 'w-1.5 bg-white/40'}`}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -1,6 +1,7 @@
 import Order from '../models/Order.js';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
+import Coupon from '../models/Coupon.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/appError.js';
 import { createNotification } from './notificationController.js';
@@ -17,11 +18,17 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     return next(new AppError('Your cart space is empty. Order generation cancelled.', 400));
   }
 
+  // Only items currently in the ACTIVE bag are checked out — "Saved for Later" items are left untouched
+  const activeCartItems = cart.items.filter((item) => !item.savedForLater);
+  if (activeCartItems.length === 0) {
+    return next(new AppError('Your cart space is empty. Order generation cancelled.', 400));
+  }
+
   // 2. Validate current inventory levels and re-calculate pricing metrics securely from DB values
   const orderItems = [];
   let itemsPrice = 0;
 
-  for (const item of cart.items) {
+  for (const item of activeCartItems) {
     const dbProduct = item.product;
     if (!dbProduct) {
       return next(new AppError('One or more products in your cart no longer exist.', 404));
@@ -45,35 +52,62 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // 3. Compute auxiliary calculations (Tax, Shipping)
-  const shippingPrice = itemsPrice > 100 ? 0 : 15; // Free shipping on high-value checkouts
-  const taxPrice = Math.round(itemsPrice * 0.18 * 100) / 100; // 18% Standard Tax computation
-  const totalPrice = itemsPrice + shippingPrice + taxPrice;
+  // 3. Re-validate any coupon attached to the cart against fresh server-side numbers.
+  //    The discount is NEVER trusted from the client/cart cache — it's recomputed here.
+  let discountAmount = 0;
+  let appliedCouponCode = null;
 
-  // 4. Instantiate official Order state document
+  if (cart.coupon?.code) {
+    const coupon = await Coupon.findOne({ code: cart.coupon.code });
+    if (coupon) {
+      const result = coupon.validateForCart(itemsPrice);
+      if (result.valid) {
+        discountAmount = result.discountAmount;
+        appliedCouponCode = coupon.code;
+      }
+      // If it's no longer valid (expired, limit hit, etc.) it's silently dropped —
+      // the order proceeds at full price rather than blocking checkout.
+    }
+  }
+
+  // 4. Compute auxiliary calculations (Tax, Shipping) off the DISCOUNTED subtotal
+  const discountedSubtotal = Math.max(itemsPrice - discountAmount, 0);
+  const shippingPrice = discountedSubtotal > 100 ? 0 : 15; // Free shipping on high-value checkouts
+  const taxPrice = Math.round(discountedSubtotal * 0.18 * 100) / 100; // 18% Standard Tax computation
+  const totalPrice = discountedSubtotal + shippingPrice + taxPrice;
+
+  // 5. Instantiate official Order state document
   const order = await Order.create({
     user: req.user._id,
     items: orderItems,
     shippingAddress,
     paymentMethod,
     itemsPrice,
+    coupon: { code: appliedCouponCode, discountAmount },
     taxPrice,
     shippingPrice,
     totalPrice,
   });
 
-  // 5. Adjust stock levels across purchased products
-  for (const item of cart.items) {
+  // 6. Adjust stock levels across purchased products
+  for (const item of activeCartItems) {
     await Product.findByIdAndUpdate(item.product._id, {
       $inc: { stock: -item.quantity },
     });
   }
 
-  // 6. Purge the cart now that checkout processing has completed
-  cart.items = [];
+  // 7. Increment the coupon's usage counter now that it's actually been spent
+  if (appliedCouponCode) {
+    await Coupon.findOneAndUpdate({ code: appliedCouponCode }, { $inc: { usedCount: 1 } });
+  }
+
+  // 8. Purge only the items that were just checked out — "Saved for Later" items and
+  //    any coupon state are cleared for the next active bag.
+  cart.items = cart.items.filter((item) => item.savedForLater);
+  cart.coupon = { code: null, discountType: null, discountValue: null, discountAmount: 0 };
   await cart.save();
 
-  // 7. Notify the customer that their order was placed successfully
+  // 9. Notify the customer that their order was placed successfully
   await createNotification({
     user: order.user,
     title: 'Order Placed',

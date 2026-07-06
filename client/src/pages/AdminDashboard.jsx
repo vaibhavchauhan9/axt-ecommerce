@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, ShoppingBag, AlertTriangle, TrendingUp, IndianRupee, Package, Plus, Trash2, Pencil, X, Users, Tag } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, AlertTriangle, TrendingUp, IndianRupee, Package, Plus, Trash2, Pencil, X, Users, Tag, Bell } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import CustomerManagement from '../components/admin/CustomerManagement';
 import CouponManagement from '../components/admin/CouponManagement';
+import NotificationBroadcast from '../components/admin/NotificationBroadcast';
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -282,6 +283,12 @@ export default function AdminDashboard() {
               className={`flex items-center gap-3 w-full p-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'coupons' ? 'bg-white text-black' : 'bg-neutral-900/40 border border-white/5 text-neutral-400 hover:bg-neutral-900 hover:text-white'}`}
             >
               <Tag size={16} /> Coupons
+            </button>
+            <button 
+              onClick={() => setActiveTab('notifications')}
+              className={`flex items-center gap-3 w-full p-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'notifications' ? 'bg-white text-black' : 'bg-neutral-900/40 border border-white/5 text-neutral-400 hover:bg-neutral-900 hover:text-white'}`}
+            >
+              <Bell size={16} /> Notifications
             </button>
           </nav>
         </aside>
@@ -758,6 +765,9 @@ export default function AdminDashboard() {
 
           {/* TAB 5: Coupon Management */}
           {activeTab === 'coupons' && <CouponManagement />}
+
+          {/* TAB 6: Send Notifications */}
+          {activeTab === 'notifications' && <NotificationBroadcast />}
 
         </main>
       </div>

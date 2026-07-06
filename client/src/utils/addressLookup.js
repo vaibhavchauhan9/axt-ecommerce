@@ -58,23 +58,38 @@ export async function searchAddress(query) {
 }
 
 // Reverse geocodes a lat/lng (from browser Geolocation) into a parsed address.
+// Tries a precise (street-level) lookup first, then falls back to a coarser
+// zoom level if the exact point has no mapped address — better to get the
+// city/area filled in than nothing at all.
 export async function reverseGeocode(latitude, longitude) {
-  const params = new URLSearchParams({
-    format: 'jsonv2',
-    lat: latitude,
-    lon: longitude,
-    addressdetails: '1',
-  });
+  const zoomLevels = [18, 14]; // 18 = building/street level, 14 = city/town level
 
-  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
-    headers: { 'Accept-Language': 'en' },
-  });
-  if (!res.ok) throw new Error('Could not detect your address from your location.');
+  let lastResult = null;
 
-  const result = await res.json();
-  if (!result?.address) throw new Error('Could not detect your address from your location.');
+  for (const zoom of zoomLevels) {
+    const params = new URLSearchParams({
+      format: 'jsonv2',
+      lat: latitude,
+      lon: longitude,
+      zoom: String(zoom),
+      addressdetails: '1',
+    });
 
-  return parseNominatimResult(result);
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
+      headers: { 'Accept-Language': 'en' },
+    });
+    if (!res.ok) continue;
+
+    const result = await res.json();
+    if (result?.address) {
+      lastResult = parseNominatimResult(result);
+      // If we got a street back, no need to try the coarser fallback
+      if (lastResult.street) return lastResult;
+    }
+  }
+
+  if (lastResult) return lastResult; // coarser result is still better than an error
+  throw new Error('Could not detect your address from your location.');
 }
 
 function parseNominatimResult(result) {
@@ -97,4 +112,3 @@ export function isAllowedState(state) {
 }
 
 export { ALLOWED_STATE };
-

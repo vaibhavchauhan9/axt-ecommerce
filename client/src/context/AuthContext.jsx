@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import apiClient from '../services/apiClient';
+import { getToken, setToken, clearToken, updateTokenInPlace } from '../utils/tokenStorage';
 
 const AuthContext = createContext(null);
 
@@ -10,14 +11,14 @@ export const AuthProvider = ({ children }) => {
   // Silent Boot Authentication Check Sequence
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('axt_token');
+      const token = getToken();
       if (token) {
         try {
           const { data } = await apiClient.get('/users/me');
           setUser(data.data.user);
         } catch (error) {
           console.error('[Auth Context Boundary] Automatic initialization handshake failed.');
-          localStorage.removeItem('axt_token');
+          clearToken();
         }
       }
       setLoading(false);
@@ -26,11 +27,11 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const loginUser = async (email, password) => {
+  const loginUser = async (email, password, rememberMe = true) => {
     setLoading(true);
     try {
       const { data } = await apiClient.post('/auth/login', { email, password });
-      localStorage.setItem('axt_token', data.accessToken);
+      setToken(data.accessToken, rememberMe);
       setUser(data.data.user);
       return { success: true };
     } catch (error) {
@@ -63,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data } = await apiClient.post('/auth/verify-email', { email, otp });
-      localStorage.setItem('axt_token', data.accessToken);
+      setToken(data.accessToken, true);
       setUser(data.data.user);
       return { success: true };
     } catch (error) {
@@ -92,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data } = await apiClient.post('/auth/google', { credential });
-      localStorage.setItem('axt_token', data.accessToken);
+      setToken(data.accessToken, true);
       setUser(data.data.user);
       return { success: true };
     } catch (error) {
@@ -111,7 +112,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('[Auth Context Boundary] Server session cleanup error.');
     } finally {
-      localStorage.removeItem('axt_token');
+      clearToken();
       setUser(null);
     }
   };

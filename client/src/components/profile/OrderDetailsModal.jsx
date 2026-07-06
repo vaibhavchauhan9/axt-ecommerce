@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, CreditCard, Package } from 'lucide-react';
+import { X, MapPin, CreditCard, Package, RotateCcw } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import OrderTimeline from './OrderTimeline';
+import ReturnRequestModal from './ReturnRequestModal';
 
 const statusColor = (status) => {
   if (status === 'DELIVERED') return 'text-emerald-400 bg-emerald-500/10';
@@ -13,6 +14,8 @@ export default function OrderDetailsModal({ orderId, onClose }) {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnSubmittedMsg, setReturnSubmittedMsg] = useState('');
 
   useEffect(() => {
     let pollTimer;
@@ -125,9 +128,34 @@ export default function OrderDetailsModal({ orderId, onClose }) {
                 </div>
               </div>
             </div>
+
+            {/* Return / Replacement / Refund entry point — only once the order has actually arrived */}
+            {order.orderStatus === 'DELIVERED' && (
+              <div className="mt-6 pt-6 border-t border-white/5">
+                {returnSubmittedMsg ? (
+                  <p className="text-xs text-brand-accentNeon font-bold text-center">{returnSubmittedMsg}</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowReturnModal(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-neutral-900 border border-white/10 text-white text-xs font-black uppercase tracking-widest py-3 rounded-lg hover:border-brand-accentNeon transition-colors"
+                  >
+                    <RotateCcw size={14} /> Request Return / Replacement / Refund
+                  </button>
+                )}
+              </div>
+            )}
           </>
         ) : null}
       </div>
+
+      {showReturnModal && order && (
+        <ReturnRequestModal
+          order={order}
+          onClose={() => setShowReturnModal(false)}
+          onSubmitted={() => setReturnSubmittedMsg('Your request has been submitted — track it under Profile → Returns.')}
+        />
+      )}
     </div>
   );
 }

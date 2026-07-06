@@ -9,6 +9,10 @@ import {
   updatePassword,
   getWishlist,
   toggleWishlist,
+  getSavedCards,
+  addSavedCard,
+  updateSavedCard,
+  deleteSavedCard,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -26,5 +30,11 @@ router.delete('/address/:addressId', deleteAddress);
 router.put('/update-password', updatePassword);
 router.get('/wishlist', getWishlist);
 router.post('/wishlist/:productId', toggleWishlist);
+
+// Saved Cards
+router.get('/cards', getSavedCards);
+router.post('/cards', addSavedCard);
+router.patch('/cards/:cardId', updateSavedCard);
+router.delete('/cards/:cardId', deleteSavedCard);
 
 export default router;

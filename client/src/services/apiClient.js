@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken, updateTokenInPlace, clearToken } from '../utils/tokenStorage';
 
 const apiClient = axios.create({
   baseURL: 'https://axt-qmh7.onrender.com/api/v1', // Make sure this matches your API route structure!
@@ -8,7 +9,7 @@ const apiClient = axios.create({
 // Dynamic Request Interceptor: Automatically append active JWT variables
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('axt_token');
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -35,13 +36,13 @@ apiClient.interceptors.response.use(
         );
         
         const { accessToken } = response.data;
-        localStorage.setItem('axt_token', accessToken);
+        updateTokenInPlace(accessToken);
         
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
         // Dynamic Token rotation failed: Flush local memory state and log out user
-        localStorage.removeItem('axt_token');
+        clearToken();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

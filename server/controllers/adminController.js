@@ -76,8 +76,8 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin
 export const getSalesReport = asyncHandler(async (req, res, next) => {
   const reports = await Order.find({ isPaid: true })
-    .populate('user', 'name email')
-    .select('createdAt totalPrice paymentMethod itemsPrice orderStatus billingAddress')
+    .populate('user', 'name email phoneNumber')
+    .select('createdAt totalPrice paymentMethod itemsPrice orderStatus shippingAddress items tracking statusHistory')
     .sort('-createdAt');
 
   res.status(200).json({

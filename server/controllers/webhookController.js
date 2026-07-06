@@ -16,7 +16,7 @@ const completeOrderPayment = async (orderId, paymentId, email, gatewaySignature)
       updateTime: new Date().toISOString(),
       emailAddress: email,
     };
-    order.orderStatus = 'PACKED'; // Move logistics forward automatically
+    order.orderStatus = 'CONFIRMED'; // Payment captured — order is now confirmed for fulfilment
     await order.save();
     console.log(`[Webhook Success] Order ${orderId} successfully captured via ${gatewaySignature}.`);
   }

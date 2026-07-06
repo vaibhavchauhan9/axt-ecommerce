@@ -1,9 +1,10 @@
-import Order from '../models/Order.js';
+import Order, { ORDER_STATUS_SEQUENCE } from '../models/Order.js';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
 import Coupon from '../models/Coupon.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/appError.js';
+import generateTrackingNumber from '../utils/generateTrackingNumber.js';
 import { createNotification } from './notificationController.js';
 
 // @desc    Construct a premium baseline order document out of active cart profiles
@@ -164,18 +165,75 @@ export const getOrderById = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update logistics tracking status states across orders
+// @desc    Update logistics tracking status + courier/shipment details across orders
 // @route   PATCH /api/v1/orders/:id/status
 // @access  Private/Admin
+// Body:    { orderStatus, note?, trackingNumber?, courierName?, courierPhone?,
+//            courierTrackingUrl?, estimatedDeliveryDate? }
 export const updateOrderStatus = asyncHandler(async (req, res, next) => {
-  const { orderStatus } = req.body;
-  const order = await Order.findById(req.params.id);
+  const {
+    orderStatus,
+    note,
+    trackingNumber,
+    courierName,
+    courierPhone,
+    courierTrackingUrl,
+    estimatedDeliveryDate,
+  } = req.body;
 
+  const VALID_STATUSES = [...ORDER_STATUS_SEQUENCE, 'CANCELLED'];
+  if (!VALID_STATUSES.includes(orderStatus)) {
+    return next(new AppError(`Invalid order status "${orderStatus}".`, 400));
+  }
+
+  const order = await Order.findById(req.params.id);
   if (!order) {
     return next(new AppError('Target order record not located.', 404));
   }
 
+  // Guard rails: don't allow silently jumping backward in the pipeline, and
+  // don't allow any further change once an order is DELIVERED or CANCELLED.
+  // CANCELLED itself is always reachable from any non-terminal state.
+  const currentIndex = ORDER_STATUS_SEQUENCE.indexOf(order.orderStatus);
+  const nextIndex = ORDER_STATUS_SEQUENCE.indexOf(orderStatus);
+
+  if (['DELIVERED', 'CANCELLED'].includes(order.orderStatus)) {
+    return next(new AppError(`Order is already ${order.orderStatus} and cannot be updated further.`, 400));
+  }
+
+  if (orderStatus !== 'CANCELLED' && nextIndex < currentIndex) {
+    return next(
+      new AppError(
+        `Cannot move order status backward from ${order.orderStatus} to ${orderStatus}.`,
+        400
+      )
+    );
+  }
+
   order.orderStatus = orderStatus;
+
+  // Attach an optional human note to the status-history entry that the
+  // pre-save hook is about to create for this transition.
+  if (note) {
+    order.$locals.pendingNote = note;
+  }
+
+  // Courier / shipment metadata — only overwrite fields the admin actually sent,
+  // so partial updates (e.g. just adding a courier phone later) don't wipe others.
+  if (trackingNumber !== undefined) order.tracking.trackingNumber = trackingNumber;
+  if (courierName !== undefined) order.tracking.courierName = courierName;
+  if (courierPhone !== undefined) order.tracking.courierPhone = courierPhone;
+  if (courierTrackingUrl !== undefined) order.tracking.courierTrackingUrl = courierTrackingUrl;
+  if (estimatedDeliveryDate !== undefined) {
+    order.tracking.estimatedDeliveryDate = estimatedDeliveryDate ? new Date(estimatedDeliveryDate) : null;
+  }
+
+  // Auto-generate a tracking number the moment an order first ships, if the
+  // admin didn't supply one (e.g. no courier integration configured yet).
+  if (['READY_TO_SHIP', 'SHIPPED'].includes(orderStatus) && !order.tracking.trackingNumber) {
+    order.tracking.trackingNumber = generateTrackingNumber();
+  }
+
   if (orderStatus === 'DELIVERED') {
     order.deliveredAt = Date.now();
   }
@@ -184,8 +242,13 @@ export const updateOrderStatus = asyncHandler(async (req, res, next) => {
 
   // Notify the customer that their order status has changed
   const statusMessages = {
+    CONFIRMED: 'Your order has been confirmed and is being prepared.',
     PACKED: 'Your order has been packed and is being prepared for shipment.',
-    SHIPPED: 'Your order has shipped and is on its way to you.',
+    READY_TO_SHIP: 'Your order is ready to ship.',
+    SHIPPED: order.tracking.trackingNumber
+      ? `Your order has shipped. Tracking number: ${order.tracking.trackingNumber}.`
+      : 'Your order has shipped and is on its way to you.',
+    OUT_FOR_DELIVERY: 'Your order is out for delivery and should arrive today.',
     DELIVERED: 'Your order has been delivered. Thank you for shopping with us!',
     CANCELLED: 'Your order has been cancelled.',
   };
@@ -193,7 +256,7 @@ export const updateOrderStatus = asyncHandler(async (req, res, next) => {
   if (statusMessages[orderStatus]) {
     await createNotification({
       user: order.user,
-      title: `Order ${orderStatus}`,
+      title: `Order ${orderStatus.replace(/_/g, ' ')}`,
       message: `Order #${order._id.toString().slice(-8).toUpperCase()}: ${statusMessages[orderStatus]}`,
       type: 'ORDER',
       link: '/profile',

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, MapPin, CreditCard, Package } from 'lucide-react';
 import apiClient from '../../services/apiClient';
-
-const statusSteps = ['PENDING', 'PACKED', 'SHIPPED', 'DELIVERED'];
+import OrderTimeline from './OrderTimeline';
 
 const statusColor = (status) => {
   if (status === 'DELIVERED') return 'text-emerald-400 bg-emerald-500/10';
@@ -16,21 +15,30 @@ export default function OrderDetailsModal({ orderId, onClose }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchOrder = async () => {
-      setLoading(true);
+    let pollTimer;
+
+    const fetchOrder = async (isInitial) => {
+      if (isInitial) setLoading(true);
       try {
         const { data } = await apiClient.get(`/orders/${orderId}`);
         setOrder(data.data.order);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load order details.');
+        if (isInitial) setError(err.response?.data?.message || 'Failed to load order details.');
       } finally {
-        setLoading(false);
+        if (isInitial) setLoading(false);
       }
     };
-    if (orderId) fetchOrder();
-  }, [orderId]);
 
-  const currentStepIndex = order ? statusSteps.indexOf(order.orderStatus) : -1;
+    if (orderId) {
+      fetchOrder(true);
+      // Lightweight "real-time" tracking: re-check status every 20s while
+      // the modal is open, so a customer watching their order sees updates
+      // (e.g. admin marking it Shipped) without needing to close/reopen.
+      pollTimer = setInterval(() => fetchOrder(false), 20000);
+    }
+
+    return () => clearInterval(pollTimer);
+  }, [orderId]);
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
@@ -58,7 +66,7 @@ export default function OrderDetailsModal({ orderId, onClose }) {
               <div className="flex items-center gap-3">
                 <h3 className="font-display font-black text-xl uppercase tracking-wider">Order Details</h3>
                 <span className={`px-2 py-1 rounded text-[10px] font-black tracking-widest uppercase ${statusColor(order.orderStatus)}`}>
-                  {order.orderStatus}
+                  {order.orderStatus.replace(/_/g, ' ')}
                 </span>
               </div>
               <p className="text-xs text-neutral-500 mt-1">
@@ -66,28 +74,8 @@ export default function OrderDetailsModal({ orderId, onClose }) {
               </p>
             </div>
 
-            {/* Status Timeline */}
-            {order.orderStatus !== 'CANCELLED' && (
-              <div className="flex items-center justify-between mb-8 px-2">
-                {statusSteps.map((step, idx) => (
-                  <React.Fragment key={step}>
-                    <div className="flex flex-col items-center gap-2">
-                      <div
-                        className={`w-3 h-3 rounded-full ${
-                          idx <= currentStepIndex ? 'bg-brand-accentNeon' : 'bg-neutral-800 border border-white/10'
-                        }`}
-                      />
-                      <span className={`text-[9px] font-bold uppercase tracking-widest ${idx <= currentStepIndex ? 'text-white' : 'text-neutral-600'}`}>
-                        {step}
-                      </span>
-                    </div>
-                    {idx < statusSteps.length - 1 && (
-                      <div className={`flex-1 h-0.5 mx-1 ${idx < currentStepIndex ? 'bg-brand-accentNeon' : 'bg-neutral-800'}`} />
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            )}
+            {/* Live Status Timeline + Courier / Tracking Details */}
+            <OrderTimeline order={order} />
 
             {/* Items */}
             <div className="mb-6">

@@ -10,6 +10,7 @@ import {
   updateCoupon,
   deleteCoupon,
 } from '../controllers/adminController.js';
+import { sendAdminNotification } from '../controllers/notificationController.js';
 import { protect, restrictTo } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -32,5 +33,8 @@ router.route('/coupons')
 router.route('/coupons/:id')
   .patch(updateCoupon)
   .delete(deleteCoupon);
+
+// Send notifications to customers
+router.post('/notifications', sendAdminNotification);
 
 export default router;

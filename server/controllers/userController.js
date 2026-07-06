@@ -64,7 +64,12 @@ export const updateMe = asyncHandler(async (req, res, next) => {
 // @route   POST /api/v1/users/address
 // @access  Private
 export const addAddress = asyncHandler(async (req, res, next) => {
-  const { street, city, state, postalCode, country, isDefault } = req.body;
+  const { street, city, postalCode, isDefault } = req.body;
+  // State & country are permanently fixed to the business's current delivery zone.
+  // Whatever the client sends for these two fields is ignored, not just validated —
+  // this can't be bypassed even by calling the API directly.
+  const state = 'Uttar Pradesh';
+  const country = 'India';
 
   const user = await User.findById(req.user._id);
 
@@ -104,7 +109,8 @@ export const getAddresses = asyncHandler(async (req, res, next) => {
 // @access  Private
 export const updateAddress = asyncHandler(async (req, res, next) => {
   const { addressId } = req.params;
-  const { street, city, state, postalCode, country, isDefault } = req.body;
+  const { street, city, postalCode, isDefault } = req.body;
+  // State & country are permanently fixed — never accepted from the request body.
 
   const user = await User.findById(req.user._id);
   const address = user.addresses.id(addressId);
@@ -115,9 +121,9 @@ export const updateAddress = asyncHandler(async (req, res, next) => {
 
   if (street !== undefined) address.street = street;
   if (city !== undefined) address.city = city;
-  if (state !== undefined) address.state = state;
   if (postalCode !== undefined) address.postalCode = postalCode;
-  if (country !== undefined) address.country = country;
+  address.state = 'Uttar Pradesh';
+  address.country = 'India';
 
   // If this address is being promoted to default, unset the flag on all others
   if (isDefault) {

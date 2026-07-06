@@ -75,9 +75,12 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/admin/sales-report
 // @access  Private/Admin
 export const getSalesReport = asyncHandler(async (req, res, next) => {
-  const reports = await Order.find({ isPaid: true })
+  // Prepaid orders (Stripe/Razorpay) only belong here once payment is confirmed.
+  // COD orders never set isPaid (cash is collected on delivery, not at checkout),
+  // so they must be included unconditionally or they'd never appear for fulfilment.
+  const reports = await Order.find({ $or: [{ isPaid: true }, { paymentMethod: 'COD' }] })
     .populate('user', 'name email phoneNumber')
-    .select('createdAt totalPrice paymentMethod itemsPrice orderStatus shippingAddress items tracking statusHistory')
+    .select('createdAt totalPrice paymentMethod itemsPrice orderStatus shippingAddress items tracking shipment statusHistory')
     .sort('-createdAt');
 
   res.status(200).json({
@@ -180,7 +183,7 @@ export const getCustomerById = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Toggle a customer's active status — blocks or unblocks their account access
+// @desc    Toggle a customer's active status â blocks or unblocks their account access
 // @route   PATCH /api/v1/admin/customers/:id/block
 // @access  Private/Admin
 export const toggleBlockCustomer = asyncHandler(async (req, res, next) => {

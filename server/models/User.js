@@ -33,6 +33,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    profileImage: {
+      type: String,
+      default: '',
+    },
+    age: {
+      type: Number,
+      min: [13, 'Age must be at least 13.'],
+      max: [120, 'Please enter a valid age.'],
+    },
+    gender: {
+      type: String,
+      enum: ['Male', 'Female', 'Other', 'Prefer not to say'],
+    },
     wishlist: [
       {
         type: mongoose.Schema.Types.ObjectId,

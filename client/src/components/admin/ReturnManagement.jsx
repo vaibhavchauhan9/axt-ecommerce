@@ -139,7 +139,7 @@ export default function ReturnManagement() {
                     {r.items.map((it, idx) => (
                       <div key={idx} className="flex items-center gap-3 text-xs text-neutral-300">
                         <img src={it.image} alt={it.name} className="w-8 h-8 object-cover rounded bg-neutral-800" />
-                        <span>{it.quantity}x {it.name} ({it.size}/{it.color}) — ₹{(it.price * it.quantity).toFixed(2)}</span>
+                        <span>{it.quantity}x {it.name} ({it.size}/{it.color?.name}) — ₹{(it.price * it.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

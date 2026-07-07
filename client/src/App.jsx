@@ -16,6 +16,7 @@ import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
+import MyOrders from './pages/MyOrders';
 import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -91,6 +92,11 @@ export default function App() {
                         <Route path="/profile" element={
                           <ProtectedRoute>
                             <Profile />
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/orders" element={
+                          <ProtectedRoute>
+                            <MyOrders />
                           </ProtectedRoute>
                         } />
 

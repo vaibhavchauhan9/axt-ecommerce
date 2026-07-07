@@ -10,7 +10,7 @@ import { refundOriginalPayment } from '../services/refundGateway.js';
 // How many days after delivery a customer may still open a return/replacement/refund request.
 const RETURN_WINDOW_DAYS = Number(process.env.RETURN_WINDOW_DAYS) || 7;
 
-const orderItemKey = (item) => `${item.product.toString()}_${item.size}_${item.color}`;
+const orderItemKey = (item) => `${item.product.toString()}_${item.size}_${item.color?.name}`;
 
 // @desc    Customer opens a return, replacement, or refund request against a delivered order
 // @route   POST /api/v1/returns
@@ -51,7 +51,7 @@ export const createReturnRequest = asyncHandler(async (req, res, next) => {
   const alreadyRequestedQty = {};
   priorReturns.forEach((r) =>
     r.items.forEach((it) => {
-      const key = `${it.product.toString()}_${it.size}_${it.color}`;
+      const key = orderItemKey(it);
       alreadyRequestedQty[key] = (alreadyRequestedQty[key] || 0) + it.quantity;
     })
   );
@@ -62,7 +62,7 @@ export const createReturnRequest = asyncHandler(async (req, res, next) => {
       (oi) =>
         oi.product.toString() === requested.productId &&
         oi.size === requested.size &&
-        oi.color === requested.color
+        oi.color?.name === requested.color?.name
     );
     if (!orderItem) {
       return next(new AppError('One of the selected items does not belong to this order.', 400));
@@ -72,7 +72,7 @@ export const createReturnRequest = asyncHandler(async (req, res, next) => {
     if (requested.quantity < 1 || requested.quantity > remaining) {
       return next(
         new AppError(
-          `Only ${Math.max(remaining, 0)} unit(s) of "${orderItem.name}" (${orderItem.size}/${orderItem.color}) remain eligible for return.`,
+          `Only ${Math.max(remaining, 0)} unit(s) of "${orderItem.name}" (${orderItem.size}/${orderItem.color?.name}) remain eligible for return.`,
           400
         )
       );

@@ -24,7 +24,13 @@ const orderItemSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   quantity: { type: Number, required: true },
   size: { type: String, required: true },
-  color: { type: String, required: true },
+  // Matches the Cart model's color shape ({ name, hex }) — this was
+  // previously a plain String, which mismatched what checkout actually
+  // sends and could store/cast the color incorrectly.
+  color: {
+    name: { type: String, required: true },
+    hex: { type: String, required: true },
+  },
 });
 
 const orderSchema = new mongoose.Schema(

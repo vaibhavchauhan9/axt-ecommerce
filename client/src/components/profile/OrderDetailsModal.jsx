@@ -119,7 +119,7 @@ export default function OrderDetailsModal({ orderId, onClose }) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-white truncate">{item.name}</p>
                       <p className="text-[11px] text-neutral-500">
-                        {item.size} / {item.color} · Qty {item.quantity}
+                        {item.size} / {item.color?.name} · Qty {item.quantity}
                       </p>
                     </div>
                     <p className="text-sm font-bold text-white shrink-0">₹{(item.price * item.quantity).toFixed(2)}</p>

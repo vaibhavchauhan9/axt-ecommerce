@@ -25,7 +25,7 @@ export default function ReturnRequestModal({ order, onClose, onSubmitted }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const itemKey = (item) => `${item.product}_${item.size}_${item.color}`;
+  const itemKey = (item) => `${item.product}_${item.size}_${item.color?.name}`;
 
   const setQty = (item, qty) => {
     const clamped = Math.max(0, Math.min(qty, item.quantity));
@@ -114,7 +114,7 @@ export default function ReturnRequestModal({ order, onClose, onSubmitted }) {
                 <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded-md bg-neutral-800 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-white truncate">{item.name}</p>
-                  <p className="text-[10px] text-neutral-500">{item.size} / {item.color} · ordered {item.quantity}</p>
+                  <p className="text-[10px] text-neutral-500">{item.size} / {item.color?.name} · ordered {item.quantity}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button type="button" onClick={() => setQty(item, qty - 1)} className="w-6 h-6 rounded bg-neutral-800 text-white text-xs">−</button>

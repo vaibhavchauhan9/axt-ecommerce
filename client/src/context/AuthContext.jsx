@@ -117,8 +117,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshUser = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, verifyEmailOtp, resendVerificationOtp, googleAuth, logoutUser, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, verifyEmailOtp, resendVerificationOtp, googleAuth, logoutUser, refreshUser, isAdmin: user?.role === 'admin' }}>
       {children}
     </AuthContext.Provider>
   );

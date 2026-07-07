@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, CreditCard, Package, RotateCcw } from 'lucide-react';
+import { X, MapPin, CreditCard, Package, RotateCcw, Download } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import OrderTimeline from './OrderTimeline';
 import ReturnRequestModal from './ReturnRequestModal';
@@ -16,6 +16,26 @@ export default function OrderDetailsModal({ orderId, onClose }) {
   const [error, setError] = useState('');
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnSubmittedMsg, setReturnSubmittedMsg] = useState('');
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+
+  const handleDownloadInvoice = async () => {
+    setDownloadingInvoice(true);
+    try {
+      const response = await apiClient.get(`/orders/${orderId}/invoice`, { responseType: 'blob' });
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', `invoice-${orderId.slice(-8).toUpperCase()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      alert('Failed to download invoice. Please try again.');
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
 
   useEffect(() => {
     let pollTimer;
@@ -72,6 +92,13 @@ export default function OrderDetailsModal({ orderId, onClose }) {
                   {order.orderStatus.replace(/_/g, ' ')}
                 </span>
               </div>
+              <button
+                onClick={handleDownloadInvoice}
+                disabled={downloadingInvoice}
+                className="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-accentNeon border border-brand-accentNeon/30 rounded-lg px-3 py-2 hover:bg-brand-accentNeon/10 transition-colors disabled:opacity-50"
+              >
+                <Download size={12} /> {downloadingInvoice ? 'Preparing...' : 'Download Invoice'}
+              </button>
               <p className="text-xs text-neutral-500 mt-1">
                 Placed on {new Date(order.createdAt).toLocaleString()}
               </p>

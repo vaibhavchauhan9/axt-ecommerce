@@ -1,5 +1,5 @@
 import express from 'express';
-import { createOrder, getMyOrders, getOrderById, updateOrderStatus } from '../controllers/orderController.js';
+import { createOrder, getMyOrders, getOrderById, updateOrderStatus, downloadInvoice } from '../controllers/orderController.js';
 import { protect, restrictTo } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -14,6 +14,9 @@ router.route('/my-orders')
 
 router.route('/:id')
   .get(getOrderById);
+
+router.route('/:id/invoice')
+  .get(downloadInvoice);
 
 router.route('/:id/status')
   .patch(restrictTo('admin'), updateOrderStatus);

@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/appError.js';
+import cloudinary from '../config/cloudinary.js';
 
 // Helper tool to safely strip out illegal parameter field injections (e.g., changing role to 'admin')
 const filterObj = (obj, ...allowedFields) => {
@@ -44,7 +45,7 @@ export const updateMe = asyncHandler(async (req, res, next) => {
   }
 
   // 2. Filter input properties down to clean, non-sensitive properties
-  const filteredBody = filterObj(req.body, 'name', 'phoneNumber');
+  const filteredBody = filterObj(req.body, 'name', 'phoneNumber', 'age', 'gender');
 
   // 3. Execute updates with full query validation parsing rules
   const updatedUser = await User.findByIdAndUpdate(req.user._id, filteredBody, {
@@ -388,5 +389,39 @@ export const deleteMe = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'Your account has been deactivated.',
+  });
+});
+
+// @desc    Upload/replace the logged-in user's profile picture
+// @route   POST /api/v1/users/upload-avatar
+// @access  Private
+// Expects multipart/form-data with a single field named "image" (handled by
+// the uploadMiddleware multer instance mounted on this route).
+export const uploadAvatar = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new AppError('Please attach an image file.', 400));
+  }
+
+  // Stream the in-memory buffer straight to Cloudinary — no temp files on disk.
+  const uploadResult = await new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'axt/avatars', resource_type: 'image', transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }] },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(req.file.buffer);
+  });
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    { profileImage: uploadResult.secure_url },
+    { new: true }
+  );
+
+  res.status(200).json({
+    status: 'success',
+    data: { user: updatedUser },
   });
 });

@@ -12,7 +12,7 @@ export default function SideMenu() {
   const menuItems = [
     { label: 'HOME', path: '/' },
     { label: 'ACCOUNT', path: '/profile' },
-    { label: 'MY ORDERS', path: '/profile' }, // Tied to orders tab inside Profile component
+    { label: 'MY ORDERS', path: '/orders' },
     { label: 'WISHLIST', path: '/wishlist' },
     { label: 'MY CART', path: null, action: () => { toggleSidebar(); toggleCartDrawer(); } },
     { label: 'ABOUT US', path: '/about' },

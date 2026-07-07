@@ -3,6 +3,7 @@ import {
   getMe,
   updateMe,
   deleteMe,
+  uploadAvatar,
   addAddress,
   getAddresses,
   updateAddress,
@@ -15,6 +16,7 @@ import {
   updateSavedCard,
   deleteSavedCard,
 } from '../controllers/userController.js';
+import upload from '../middleware/uploadMiddleware.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -24,6 +26,7 @@ router.use(protect);
 
 router.get('/me', getMe);
 router.patch('/update-me', updateMe);
+router.post('/upload-avatar', upload.single('image'), uploadAvatar);
 router.delete('/delete-me', deleteMe);
 router.get('/address', getAddresses);
 router.post('/address', addAddress);

@@ -101,7 +101,7 @@ export default function MyReturns() {
                 {r.items.map((it, idx) => (
                   <div key={idx} className="flex items-center gap-3 text-xs text-neutral-300">
                     <img src={it.image} alt={it.name} className="w-8 h-8 object-cover rounded bg-neutral-800" />
-                    <span>{it.quantity}x {it.name} ({it.size}/{it.color})</span>
+                    <span>{it.quantity}x {it.name} ({it.size}/{it.color?.name})</span>
                   </div>
                 ))}
               </div>

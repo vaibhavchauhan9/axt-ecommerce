@@ -5,6 +5,7 @@ import Coupon from '../models/Coupon.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/appError.js';
 import generateTrackingNumber from '../utils/generateTrackingNumber.js';
+import { generateInvoicePdf } from '../utils/generateInvoicePdf.js';
 import { createNotification } from './notificationController.js';
 
 // @desc    Construct a premium baseline order document out of active cart profiles
@@ -163,6 +164,28 @@ export const getOrderById = asyncHandler(async (req, res, next) => {
     status: 'success',
     data: { order },
   });
+});
+
+// @desc    Generate and stream a professional PDF tax invoice for an order
+// @route   GET /api/v1/orders/:id/invoice
+// @access  Private (owner or admin)
+export const downloadInvoice = asyncHandler(async (req, res, next) => {
+  const order = await Order.findById(req.params.id).populate('user', 'name email phoneNumber');
+
+  if (!order) {
+    return next(new AppError('Target order record not located.', 404));
+  }
+
+  // Same ownership guard as getOrderById — only the buyer or an admin can pull this document
+  if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    return next(new AppError('Access Denied. Unauthorized invoice request.', 403));
+  }
+
+  const fileName = `invoice-${order._id.toString().slice(-8).toUpperCase()}.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+  generateInvoicePdf(order, res);
 });
 
 // @desc    Update logistics tracking status + courier/shipment details across orders

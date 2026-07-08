@@ -15,7 +15,11 @@ import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import Checkout from './pages/Checkout';
-import Profile from './pages/Profile';
+import AccountLayout from './components/layout/AccountLayout';
+import AccountSettings from './pages/AccountSettings';
+import AccountAddresses from './pages/AccountAddresses';
+import AccountCards from './pages/AccountCards';
+import AccountNotifications from './pages/AccountNotifications';
 import MyOrders from './pages/MyOrders';
 import About from './pages/About';
 import Support from './pages/Support';
@@ -95,9 +99,14 @@ export default function App() {
                         } />
                         <Route path="/profile" element={
                           <ProtectedRoute>
-                            <Profile />
+                            <AccountLayout />
                           </ProtectedRoute>
-                        } />
+                        }>
+                          <Route index element={<AccountSettings />} />
+                          <Route path="addresses" element={<AccountAddresses />} />
+                          <Route path="cards" element={<AccountCards />} />
+                          <Route path="notifications" element={<AccountNotifications />} />
+                        </Route>
                         <Route path="/orders" element={
                           <ProtectedRoute>
                             <MyOrders />

@@ -24,6 +24,7 @@ import webhookRouter from './routes/webhookRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 import notificationRouter from './routes/notificationRoutes.js';
 import returnRouter from './routes/returnRoutes.js';
+import contactRouter from './routes/contactRoutes.js';
 
 const app = express();
 
@@ -88,6 +89,7 @@ app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/payments', paymentRouter);
 app.use('/api/v1/notifications', notificationRouter);
 app.use('/api/v1/returns', returnRouter);
+app.use('/api/v1/contact', contactRouter);
 // Admin data must always be fresh — never served from browser/proxy cache,
 // which was causing the admin dashboard to show stale (empty) order lists
 // via 304 Not Modified responses after new orders were placed.

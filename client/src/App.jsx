@@ -17,6 +17,8 @@ import Wishlist from './pages/Wishlist';
 import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import MyOrders from './pages/MyOrders';
+import About from './pages/About';
+import Support from './pages/Support';
 import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -68,6 +70,8 @@ export default function App() {
                         {/* Public Visual Interfaces */}
                         <Route path="/" element={<Home />} />
                         <Route path="/shop" element={<Shop />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/support" element={<Support />} />
                         <Route path="/collection/:id" element={<Collection />} />
                         <Route path="/product/:slug" element={<ProductDetails />} />
                         <Route path="/login" element={<Login />} />
